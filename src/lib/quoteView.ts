@@ -6,7 +6,20 @@ export interface QuoteViewItem {
   id: string;
   name: string;
   description: string;
-  price: number; // centavos
+  details: string[];
+  unitLabel: string;
+  quantity: number;
+  unitPrice: number; // centavos, por unidade
+  price: number; // total da linha = round(quantity * unitPrice)
+}
+
+/** "2 kg × R$ 15,00" quando faz sentido mostrar; senão "". */
+export function itemUnitLine(item: QuoteViewItem, formatMoney: (c: number) => string): string {
+  if (item.quantity === 1 && (item.unitLabel === 'projeto' || item.unitLabel === 'un' || !item.unitLabel)) {
+    return '';
+  }
+  const qty = Number.isInteger(item.quantity) ? String(item.quantity) : item.quantity.toFixed(2).replace('.', ',');
+  return `${qty} ${item.unitLabel} × ${formatMoney(item.unitPrice)}`;
 }
 
 export interface QuoteViewCompany {

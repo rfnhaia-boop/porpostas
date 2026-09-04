@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { formatBRL } from '@/lib/money';
+import { ItemExtras } from './ItemExtras';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 
 const money = formatBRL;
@@ -73,8 +74,11 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
                 {service.description && (
                   <p className="mt-1.5 text-xs leading-relaxed text-black/55">{service.description}</p>
                 )}
+                <ItemExtras item={service} money={money} tone="light" />
               </div>
-              <span className="hidden text-center font-grotesque text-sm text-black/45 md:block">1 un.</span>
+              <span className="hidden text-center font-grotesque text-sm text-black/45 md:block">
+                {Number.isInteger(service.quantity) ? service.quantity : service.quantity.toFixed(2)} {service.unitLabel}
+              </span>
               <strong className="text-right font-grotesque tabular-nums">{money(service.price)}</strong>
             </div>
           ))}

@@ -98,7 +98,14 @@ export default function ProposalsPage() {
       paymentTerms: p.paymentTerms,
       notes: p.notes,
       accessPhrase: p.accessPhrase,
-      items: p.items.map((it) => ({ name: it.name, description: it.description, price: it.price })),
+      items: p.items.map((it) => ({
+        name: it.name,
+        description: it.description,
+        details: it.details ?? [],
+        unitLabel: it.unitLabel ?? 'un',
+        quantity: it.quantity ?? 1,
+        unitPrice: it.unitPrice ?? it.price,
+      })),
     });
     router.push('/quotes/preview');
   };

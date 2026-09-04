@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
+import { parseCatalogFields } from '@/lib/catalog';
 
 export async function GET() {
   const companyId = await getCurrentCompanyId();
@@ -19,13 +20,17 @@ export async function POST(request: NextRequest) {
   if (!body?.name || typeof body.name !== 'string') {
     return Response.json({ error: 'Nome é obrigatório.' }, { status: 400 });
   }
-  const price = Number(body.price);
+  const fields = parseCatalogFields(body);
   const service = await prisma.service.create({
     data: {
       companyId,
-      name: body.name,
-      description: typeof body.description === 'string' ? body.description : '',
-      price: Number.isFinite(price) ? price : 0,
+      name: (fields.name as string) || body.name,
+      description: (fields.description as string) ?? '',
+      kind: (fields.kind as string) ?? 'service',
+      unitLabel: (fields.unitLabel as string) ?? 'projeto',
+      price: (fields.price as number) ?? 0,
+      details: (fields.details as string[]) ?? [],
+      defaultTimeline: (fields.defaultTimeline as string) ?? '',
     },
   });
   return Response.json(service, { status: 201 });

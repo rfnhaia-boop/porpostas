@@ -124,15 +124,20 @@ model Client {
   @@index([companyId])
 }
 
+/// Item de catálogo — serviço ou produto. Cadastrado 1x, reusado em várias propostas.
 model Service {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name        String
-  description String   @default("")
-  price       Int      @default(0) // centavos
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name            String
+  description     String   @default("") // subtítulo curto
+  kind            String   @default("service") // service | product
+  unitLabel       String   @default("projeto") // projeto | kg | unidade | hora | ...
+  price           Int      @default(0) // centavos, por unidade
+  details         String[] @default([]) // o que inclui / entregáveis (lista de bullets)
+  defaultTimeline String   @default("") // prazo padrão que pré-preenche a proposta
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([companyId])
 }
@@ -166,14 +171,18 @@ model Proposal {
   @@index([clientId])
 }
 
-/// Snapshot dos serviços no momento em que a proposta foi salva.
+/// Snapshot do item de catálogo no momento em que a proposta foi salva.
 model ProposalItem {
   id          String   @id @default(cuid())
   proposalId  String
   proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   name        String
   description String   @default("")
-  price       Int      @default(0) // centavos
+  details     String[] @default([])
+  unitLabel   String   @default("un")
+  quantity    Float    @default(1)
+  unitPrice   Int      @default(0) // centavos, por unidade
+  price       Int      @default(0) // total da linha = round(quantity * unitPrice)
 
   @@index([proposalId])
 }

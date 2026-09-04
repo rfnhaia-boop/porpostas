@@ -22,14 +22,32 @@ export default function NewQuotePage() {
 
   const formatCurrency = formatBRL;
 
+  const DEFAULT_TIMELINE = '30 dias úteis';
+
   const toggleService = (service: SavedService) => {
-    const exists = quoteDraft.services.find(s => s.id === service.id);
+    const exists = quoteDraft.services.find((s) => s.id === service.id);
     if (exists) {
-      updateQuoteDraft({ services: quoteDraft.services.filter(s => s.id !== service.id) });
-    } else {
-      updateQuoteDraft({ services: [...quoteDraft.services, service] });
+      updateQuoteDraft({ services: quoteDraft.services.filter((s) => s.id !== service.id) });
+      return;
     }
+    const patch: Partial<typeof quoteDraft> = {
+      services: [...quoteDraft.services, { ...service, quantity: 1 }],
+    };
+    // Se o serviço tem prazo padrão e o prazo ainda está no default, aproveita.
+    if (service.defaultTimeline && quoteDraft.timeline === DEFAULT_TIMELINE) {
+      patch.timeline = service.defaultTimeline;
+    }
+    updateQuoteDraft(patch);
   };
+
+  const setItemQty = (id: string, qty: number) => {
+    updateQuoteDraft({
+      services: quoteDraft.services.map((s) =>
+        s.id === id ? { ...s, quantity: Number.isFinite(qty) && qty > 0 ? qty : 1 } : s,
+      ),
+    });
+  };
+  const perUnit = (s: SavedService) => s.kind === 'product' || (s.unitLabel !== 'projeto' && s.unitLabel !== '');
 
   return (
     <div className="p-12 min-h-screen">
@@ -79,34 +97,61 @@ export default function NewQuotePage() {
 
       {step === 2 && (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-2xl font-black uppercase tracking-widest mb-8 text-[#FF6A00]">2. Selecione os Serviços</h2>
+          <h2 className="text-2xl font-black uppercase tracking-widest mb-8 text-[#FF6A00]">2. Serviços e produtos</h2>
           <div className="flex flex-col gap-4 mb-12">
             {savedServices.map(service => {
-              const isSelected = !!quoteDraft.services.find(s => s.id === service.id);
+              const chosen = quoteDraft.services.find(s => s.id === service.id);
+              const isSelected = !!chosen;
+              const qty = chosen?.quantity ?? 1;
               return (
-                <div 
+                <div
                   key={service.id}
-                  onClick={() => toggleService(service)}
-                  className={`p-6 rounded-3xl flex justify-between items-center cursor-pointer transition-all border ${
-                    isSelected 
-                      ? 'border-[#FF6A00] liquid-glass shadow-[0_0_20px_rgba(255,106,0,0.2)]' 
-                      : 'border-[var(--border-color)] liquid-glass opacity-70 hover:opacity-100 hover:border-[var(--border-color)]'
+                  className={`rounded-3xl border p-6 transition-all ${
+                    isSelected
+                      ? 'border-[#FF6A00] liquid-glass shadow-[0_0_20px_rgba(255,106,0,0.2)]'
+                      : 'border-[var(--border-color)] liquid-glass opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <div className="flex items-center gap-6">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? 'border-[#FF6A00] bg-[#FF6A00]' : 'border-[var(--border-color)]'
-                    }`}>
-                      {isSelected && <Check size={14} className="text-black font-bold" />}
+                  <div className="flex cursor-pointer items-center justify-between" onClick={() => toggleService(service)}>
+                    <div className="flex items-center gap-6">
+                      <div className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                        isSelected ? 'border-[#FF6A00] bg-[#FF6A00]' : 'border-[var(--border-color)]'
+                      }`}>
+                        {isSelected && <Check size={14} className="font-bold text-black" />}
+                      </div>
+                      <div>
+                        <h3 className="mb-1 flex items-center gap-2 text-xl font-bold uppercase tracking-wide">
+                          {service.name}
+                          {service.kind === 'product' && (
+                            <span className="rounded-full bg-[#FF6A00]/15 px-2 py-0.5 text-[9px] font-bold text-[#FF6A00]">Produto</span>
+                          )}
+                        </h3>
+                        <p className="text-sm text-[var(--text-muted)]">{service.description}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold uppercase tracking-wide mb-1">{service.name}</h3>
-                      <p className="text-[var(--text-muted)] text-sm">{service.description}</p>
+                    <div className="text-right">
+                      <div className="text-2xl font-black text-[#FF6A00]">{formatCurrency(service.price)}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]">por {service.unitLabel}</div>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-[#FF6A00]">
-                    {formatCurrency(service.price)}
-                  </div>
+
+                  {isSelected && perUnit(service) && (
+                    <div className="mt-4 flex items-center justify-end gap-3 border-t border-[var(--border-color)] pt-4">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Quantidade</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={qty}
+                        onChange={(e) => setItemQty(service.id, Number(e.target.value))}
+                        className="w-20 border-b-2 border-[var(--border-color)] bg-transparent pb-1 text-center text-lg font-bold text-[var(--foreground)] focus:border-[#FF6A00] focus:outline-none"
+                      />
+                      <span className="text-sm text-[var(--text-muted)]">{service.unitLabel}</span>
+                      <span className="ml-auto text-lg font-black text-[var(--foreground)]">
+                        = {formatCurrency(Math.round(qty * service.price))}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}

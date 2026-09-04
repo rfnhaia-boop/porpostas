@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
+import { normalizeProposalItems } from '@/lib/catalog';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -40,19 +41,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   }
 
   // Edição da proposta: substitui todos os itens e recalcula o total.
-  type ItemInput = { name: string; description: string; price: number };
-  const newItems: ItemInput[] | null = Array.isArray(body.items)
-    ? (body.items as unknown[])
-        .filter((it): it is { name: unknown } => typeof (it as { name?: unknown })?.name === 'string')
-        .map((it) => {
-          const o = it as { name: string; description?: unknown; price?: unknown };
-          return {
-            name: String(o.name),
-            description: typeof o.description === 'string' ? o.description : '',
-            price: Number.isFinite(Number(o.price)) ? Number(o.price) : 0,
-          };
-        })
-    : null;
+  const newItems = Array.isArray(body.items) ? normalizeProposalItems(body.items) : null;
   if (newItems) {
     data.total = newItems.reduce((sum, it) => sum + it.price, 0);
   }

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
+import { parseCatalogFields } from '@/lib/catalog';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,14 +13,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (!existing) return Response.json({ error: 'Serviço não encontrado.' }, { status: 404 });
 
   const body = await request.json();
-  const data: Record<string, string | number> = {};
-  if (typeof body.name === 'string') data.name = body.name;
-  if (typeof body.description === 'string') data.description = body.description;
-  if (body.price !== undefined) {
-    const price = Number(body.price);
-    if (Number.isFinite(price)) data.price = price;
-  }
-  const updated = await prisma.service.update({ where: { id }, data });
+  const updated = await prisma.service.update({ where: { id }, data: parseCatalogFields(body) });
   return Response.json(updated);
 }
 

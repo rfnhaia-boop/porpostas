@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
+import { normalizeProposalItems } from '@/lib/catalog';
 
 export async function GET() {
   const companyId = await getCurrentCompanyId();
@@ -13,24 +14,14 @@ export async function GET() {
   return Response.json(proposals);
 }
 
-type IncomingItem = { name?: unknown; description?: unknown; price?: unknown };
-
 export async function POST(request: NextRequest) {
   const companyId = await getCurrentCompanyId();
   if (!companyId) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
   const body = await request.json();
 
-  const rawItems: IncomingItem[] = Array.isArray(body?.items) ? body.items : [];
-  const items = rawItems
-    .filter((it) => typeof it?.name === 'string')
-    .map((it) => ({
-      name: String(it.name),
-      description: typeof it.description === 'string' ? it.description : '',
-      price: Number.isFinite(Number(it.price)) ? Number(it.price) : 0,
-    }));
-
+  const items = normalizeProposalItems(Array.isArray(body?.items) ? body.items : []);
   if (items.length === 0) {
-    return Response.json({ error: 'Inclua ao menos um serviço.' }, { status: 400 });
+    return Response.json({ error: 'Inclua ao menos um item.' }, { status: 400 });
   }
 
   let clientId: string | null = null;

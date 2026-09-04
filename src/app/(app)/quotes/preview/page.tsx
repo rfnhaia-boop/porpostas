@@ -45,8 +45,17 @@ export default function PreviewPage() {
     timeline: quoteDraft.timeline,
     paymentTerms,
     notes: quoteDraft.notes,
-    items: quoteDraft.services,
-    total: quoteDraft.services.reduce((sum, s) => sum + s.price, 0),
+    items: quoteDraft.services.map((s) => ({
+      id: s.id,
+      name: s.name,
+      description: s.description,
+      details: s.details ?? [],
+      unitLabel: s.unitLabel,
+      quantity: s.quantity ?? 1,
+      unitPrice: s.price,
+      price: Math.round((s.quantity ?? 1) * s.price),
+    })),
+    total: quoteDraft.services.reduce((sum, s) => sum + Math.round((s.quantity ?? 1) * s.price), 0),
   };
 
   // Ex.: total R$ 3.000 em 3x -> "3x mensais de R$ 1.000,00"
@@ -70,7 +79,10 @@ export default function PreviewPage() {
     items: quoteDraft.services.map((s) => ({
       name: s.name,
       description: s.description,
-      price: s.price,
+      details: s.details ?? [],
+      unitLabel: s.unitLabel,
+      quantity: s.quantity ?? 1,
+      unitPrice: s.price,
     })),
   });
 

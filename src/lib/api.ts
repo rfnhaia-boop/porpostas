@@ -19,12 +19,18 @@ export interface Client {
   createdAt: string;
 }
 
+export type CatalogKind = 'service' | 'product';
+
 export interface Service {
   id: string;
   companyId: string;
   name: string;
   description: string;
-  price: number;
+  kind: CatalogKind;
+  unitLabel: string;
+  price: number; // centavos, por unidade
+  details: string[];
+  defaultTimeline: string;
   createdAt: string;
 }
 
@@ -33,7 +39,20 @@ export interface ProposalItem {
   proposalId: string;
   name: string;
   description: string;
-  price: number;
+  details: string[];
+  unitLabel: string;
+  quantity: number;
+  unitPrice: number;
+  price: number; // total da linha
+}
+
+export interface ItemInput {
+  name: string;
+  description: string;
+  details?: string[];
+  unitLabel?: string;
+  quantity?: number;
+  unitPrice: number;
 }
 
 export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'changes_requested';
@@ -108,10 +127,17 @@ export const api = {
   },
   services: {
     list: () => request<Service[]>('/api/services'),
-    create: (data: { name: string; description?: string; price?: number }) =>
-      request<Service>('/api/services', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Pick<Service, 'name' | 'description' | 'price'>>) =>
-      request<Service>(`/api/services/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    create: (
+      data: Partial<Pick<Service, 'description' | 'kind' | 'unitLabel' | 'price' | 'details' | 'defaultTimeline'>> & {
+        name: string;
+      },
+    ) => request<Service>('/api/services', { method: 'POST', body: JSON.stringify(data) }),
+    update: (
+      id: string,
+      data: Partial<
+        Pick<Service, 'name' | 'description' | 'kind' | 'unitLabel' | 'price' | 'details' | 'defaultTimeline'>
+      >,
+    ) => request<Service>(`/api/services/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/api/services/${id}`, { method: 'DELETE' }),
   },
   proposals: {
@@ -127,7 +153,7 @@ export const api = {
       notes: string;
       status?: 'draft' | 'sent';
       accessPhrase?: string | null;
-      items: { name: string; description: string; price: number }[];
+      items: ItemInput[];
     }) => request<Proposal>('/api/proposals', { method: 'POST', body: JSON.stringify(data) }),
     update: (
       id: string,
@@ -135,7 +161,7 @@ export const api = {
         {
           status: ProposalStatus;
           accessPhrase: string | null;
-          items: { name: string; description: string; price: number }[];
+          items: ItemInput[];
         } & Pick<
           Proposal,
           'proposalNumber' | 'template' | 'validityDays' | 'timeline' | 'paymentTerms' | 'notes'

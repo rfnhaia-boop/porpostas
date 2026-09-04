@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { formatBRL } from '@/lib/money';
+import { ItemExtras } from './ItemExtras';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { Plus } from 'lucide-react';
 
@@ -70,14 +71,16 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
                     )}
                   </div>
                 </button>
-                {service.description && open && (
+                {open && (service.description || service.details?.length) && (
                   <div className="border-t border-white/10 px-7 pb-7 pt-5 pl-[3.75rem] text-[15px] leading-relaxed text-white/55 print:hidden">
                     {service.description}
+                    <ItemExtras item={service} money={money} tone="dark" />
                   </div>
                 )}
-                {service.description && (
+                {(service.description || service.details?.length) && (
                   <div className="hidden border-t border-black/10 pb-6 pt-4 pl-[3.75rem] text-sm leading-relaxed text-black/70 print:block print:pl-0">
                     {service.description}
+                    <ItemExtras item={service} money={money} tone="light" />
                   </div>
                 )}
               </div>

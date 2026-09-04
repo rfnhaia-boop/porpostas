@@ -22,7 +22,12 @@ export interface SavedService {
   id: string;
   name: string;
   description: string;
-  price: number;
+  kind: 'service' | 'product';
+  unitLabel: string;
+  price: number; // por unidade (centavos)
+  details: string[];
+  defaultTimeline: string;
+  quantity: number; // 1 no catálogo; ajustável ao montar o orçamento
 }
 
 export interface QuoteDraft {
@@ -52,7 +57,14 @@ export interface EditableProposal {
   paymentTerms: string;
   notes: string;
   accessPhrase: string | null;
-  items: { name: string; description: string; price: number }[];
+  items: {
+    name: string;
+    description: string;
+    details: string[];
+    unitLabel: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 }
 
 // --- mapeamento API <-> store -------------------------------------------------
@@ -74,7 +86,12 @@ const toService = (s: ApiService): SavedService => ({
   id: s.id,
   name: s.name,
   description: s.description,
+  kind: s.kind,
+  unitLabel: s.unitLabel,
   price: s.price,
+  details: s.details ?? [],
+  defaultTimeline: s.defaultTimeline ?? '',
+  quantity: 1,
 });
 
 export interface PlatformState {
@@ -189,12 +206,18 @@ export const usePlatformStore = create<PlatformState>()(
         const created = await api.services.create({
           name: service.name,
           description: service.description,
+          kind: service.kind,
+          unitLabel: service.unitLabel,
           price: service.price,
+          details: service.details,
+          defaultTimeline: service.defaultTimeline,
         });
         set((state) => ({ savedServices: [toService(created), ...state.savedServices] }));
       },
       updateSavedService: async (id, data) => {
-        const saved = await api.services.update(id, data);
+        const { quantity: _q, ...patch } = data;
+        void _q;
+        const saved = await api.services.update(id, patch);
         set((state) => ({
           savedServices: state.savedServices.map((s) => (s.id === id ? toService(saved) : s)),
         }));
@@ -224,7 +247,12 @@ export const usePlatformStore = create<PlatformState>()(
               id: randomId(),
               name: it.name,
               description: it.description,
-              price: it.price,
+              kind: (it.unitLabel === 'projeto' ? 'service' : 'product') as 'service' | 'product',
+              unitLabel: it.unitLabel,
+              price: it.unitPrice,
+              details: it.details ?? [],
+              defaultTimeline: '',
+              quantity: it.quantity ?? 1,
             })),
             template: asTemplate(p.template),
             proposalNumber: p.proposalNumber,

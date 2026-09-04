@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { formatBRL } from '@/lib/money';
+import { ItemExtras } from './ItemExtras';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 
 const money = formatBRL;
@@ -60,6 +61,7 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
                 {service.description && (
                   <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-black/60">{service.description}</p>
                 )}
+                <ItemExtras item={service} money={money} tone="light" />
               </div>
               <div className="w-40 text-right font-grotesque text-lg font-semibold tabular-nums">
                 {money(service.price)}

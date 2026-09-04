@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { formatBRL } from '@/lib/money';
+import { ItemExtras } from './ItemExtras';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 
 const money = formatBRL;
@@ -72,6 +73,7 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
                 {service.description && (
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-black/55">{service.description}</p>
                 )}
+                <ItemExtras item={service} money={money} tone="light" />
               </div>
               <strong className="whitespace-nowrap font-grotesque text-lg font-semibold tabular-nums">
                 {money(service.price)}
