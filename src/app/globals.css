@@ -6,7 +6,7 @@
   --color-brand-darkgray: #1A1A1A;
   --color-brand-white: #FFFFFF;
   --color-brand-cyan: #FF7A1A;
-  
+
   --font-sans: "Inter", system-ui, sans-serif;
 }
 
@@ -65,6 +65,15 @@ html.dark { color-scheme: dark; }
 }
 
 @layer utilities {
+  /* Tipografia das propostas */
+  .font-display {
+    font-family: var(--font-display), "Fraunces", Georgia, "Times New Roman", serif;
+    font-optical-sizing: auto;
+  }
+  .font-grotesque {
+    font-family: var(--font-grotesque), "Bricolage Grotesque", system-ui, sans-serif;
+  }
+
   /* Liquid glass — modo claro: painel de vidro fosco translúcido com profundidade. */
   .liquid-glass {
     background: linear-gradient(150deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.5) 100%);

@@ -4,160 +4,152 @@ import React from 'react';
 import { formatBRL } from '@/lib/money';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 
+const money = formatBRL;
+const BRASS = '#c9a86a';
+
 export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
-  const services = q.items;
-  const client = q.client;
-  const company = q.company;
-
-  const formatCurrency = formatBRL;
-
-  const currentDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const { client, company, items } = q;
+  const date = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-full w-full bg-[#0a0a0a] print:bg-white text-white print:text-black flex flex-col items-center py-12 px-4 print:p-0">
-      <div className="max-w-[21cm] w-full overflow-hidden bg-[#0f0f0f] print:bg-white border border-white/10 shadow-2xl flex flex-col p-12 md:p-16 print:border-none print:shadow-none relative">
-        <div className="absolute left-0 top-0 h-full w-2 bg-gradient-to-b from-[#d2ab65] via-[#725329] to-transparent print:bg-[#a27a3b]" />
-
-        {/* Header - Sender Data */}
-        <div className="flex justify-between items-start mb-16 border-b border-white/10 print:border-black/10 pb-12">
-          <div className="flex items-center gap-6">
-            {/* Logo Placeholder or Text */}
-            <div className="w-16 h-16 bg-white/5 print:bg-black/5 rounded-xl flex items-center justify-center border border-white/10 print:border-black/20">
+    <div className="min-h-full w-full bg-[#0c0c0d] px-4 py-16 text-white print:bg-white print:p-0 print:text-black">
+      <article className="mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col bg-[#111113] px-10 py-16 shadow-[0_60px_140px_-40px_rgba(0,0,0,.8)] ring-1 ring-white/[.06] print:min-h-0 print:bg-white print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-20">
+        {/* Cabeçalho */}
+        <header className="flex items-start justify-between gap-8 border-b border-white/10 pb-12 print:border-black/15">
+          <div className="flex items-center gap-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full ring-1 ring-white/15 print:ring-black/20">
               {company.logoUrl ? (
-                <img src={company.logoUrl} alt="Logo" className="max-w-full max-h-full rounded-xl" />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={company.logoUrl} alt={company.name} className="max-h-full max-w-full rounded-full" />
               ) : (
-                <span className="text-2xl font-black">{company.name.charAt(0)}</span>
+                <span className="font-display text-xl">{company.name.charAt(0)}</span>
               )}
             </div>
             <div>
-              <h1 className="text-3xl font-black uppercase tracking-widest">{company.name}</h1>
-              {company.cnpj && <p className="text-white/50 print:text-black/50 text-xs tracking-widest uppercase mt-1">CNPJ: {company.cnpj}</p>}
+              <p className="font-grotesque text-sm font-semibold uppercase tracking-[.2em]">{company.name}</p>
+              {company.cnpj && (
+                <p className="mt-1 text-[11px] uppercase tracking-[.16em] text-white/40 print:text-black/45">
+                  CNPJ {company.cnpj}
+                </p>
+              )}
             </div>
           </div>
-          <div className="text-right text-xs text-white/50 print:text-black/60 space-y-1">
-            <p className="font-bold text-white print:text-black uppercase tracking-widest text-sm mb-2">Contato</p>
+          <div className="text-right text-[11px] leading-relaxed text-white/45 print:text-black/50">
             <p>{company.email}</p>
             <p>{company.phone}</p>
           </div>
-        </div>
+        </header>
 
-        {/* Document Info */}
-        <div className="flex justify-between items-end mb-16">
+        {/* Título */}
+        <div className="flex flex-wrap items-end justify-between gap-6 pt-14">
           <div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter mb-2">Proposta Comercial</h2>
-            <p className="text-brand-cyan print:text-blue-600 font-bold tracking-widest text-sm uppercase">Nº {q.proposalNumber}</p>
+            <p
+              className="mb-3 font-grotesque text-[11px] font-semibold uppercase tracking-[.3em]"
+              style={{ color: BRASS }}
+            >
+              Proposta comercial
+            </p>
+            <h1 className="font-display text-[3.2rem] font-light leading-none tracking-[-.02em] md:text-[4rem]">
+              Nº {q.proposalNumber}
+            </h1>
           </div>
-          <div className="text-right text-sm text-white/50 print:text-black/60 flex gap-12">
-            <div>
-              <p className="uppercase tracking-widest text-[10px] mb-1">Data de Emissão</p>
-              <p className="font-bold text-white print:text-black">{currentDate}</p>
-            </div>
-            <div>
-              <p className="uppercase tracking-widest text-[10px] mb-1">Validade</p>
-              <p className="font-bold text-white print:text-black">{q.validityDays}</p>
-            </div>
-            <div>
-              <p className="uppercase tracking-widest text-[10px] mb-1">Prazo de Entrega</p>
-              <p className="font-bold text-white print:text-black">{q.timeline}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Client Info Grid */}
-        {client && (
-          <div className="bg-white/5 print:bg-black/5 border border-white/10 print:border-black/10 p-8 rounded-xl mb-16 relative overflow-hidden">
-            <div className="absolute left-0 top-0 w-1 h-full bg-brand-cyan print:bg-blue-600" />
-            <p className="text-[10px] text-white/40 print:text-black/40 uppercase tracking-widest mb-4">Preparado exclusivamente para</p>
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <p className="font-bold text-xl mb-1">{client.name}</p>
-                {client.company && <p className="text-sm text-white/60 print:text-black/60 uppercase tracking-widest">{client.company}</p>}
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-sm mb-1">{client.document || 'Doc. Não Informado'}</p>
-                <p className="text-sm text-white/60 print:text-black/60">{client.email || 'Email Não Informado'}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="mb-12 grid grid-cols-3 border-y border-white/10 print:border-black/10 py-5 text-center">
-          <div className="border-r border-white/10 print:border-black/10"><p className="text-[9px] uppercase tracking-widest text-white/40 print:text-black/40">Itens contratados</p><strong className="mt-1 block text-lg">{services.length}</strong></div>
-          <div className="border-r border-white/10 print:border-black/10"><p className="text-[9px] uppercase tracking-widest text-white/40 print:text-black/40">Prazo previsto</p><strong className="mt-1 block text-lg">{q.timeline}</strong></div>
-          <div><p className="text-[9px] uppercase tracking-widest text-white/40 print:text-black/40">Validade comercial</p><strong className="mt-1 block text-lg">{q.validityDays}</strong></div>
-        </div>
-
-        {/* Services Table */}
-        <div className="mb-16 flex-1">
-          <div className="border-b border-white/20 print:border-black/20 pb-4 mb-6 flex uppercase tracking-widest text-xs font-bold text-white/50 print:text-black/50">
-            <div className="w-12">Item</div>
-            <div className="flex-1">Descrição do Serviço</div>
-            <div className="w-40 text-right">Valor</div>
-          </div>
-
-          <div className="space-y-6">
-            {services.map((service, idx) => (
-              <div key={service.id} className="flex group border-b border-white/5 print:border-black/5 pb-6">
-                <div className="w-12 text-white/60 print:text-black/55 font-black mt-1">{(idx + 1).toString().padStart(2, '0')}</div>
-                <div className="flex-1 pr-8">
-                  <h3 className="font-bold text-lg mb-2">{service.name}</h3>
-                  <p className="text-sm text-white/60 print:text-black/70 leading-relaxed">{service.description}</p>
-                </div>
-                <div className="w-40 text-right font-medium text-lg">
-                  {formatCurrency(service.price)}
-                </div>
+          <dl className="grid grid-cols-3 gap-x-10 gap-y-1 text-right text-xs">
+            {[
+              ['Emissão', date],
+              ['Validade', q.validityDays],
+              ['Entrega', q.timeline],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt className="font-grotesque text-[10px] uppercase tracking-[.18em] text-white/35 print:text-black/45">
+                  {k}
+                </dt>
+                <dd className="mt-1 font-medium">{v}</dd>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
 
-        {/* Total and Notes */}
-        <div className="flex justify-between items-start pt-8 border-t border-white/20 print:border-black/20">
-          <div className="w-1/2">
-            <p className="text-xs uppercase tracking-widest text-white/65 print:text-black/60 mb-2">Observações e Condições</p>
-            <p className="text-sm text-white/60 print:text-black/70 leading-relaxed pr-8 whitespace-pre-wrap">{q.notes}</p>
+        {/* Cliente */}
+        {client && (
+          <section className="mt-14 border-l-2 py-1 pl-6" style={{ borderColor: BRASS }}>
+            <p className="font-grotesque text-[10px] uppercase tracking-[.22em] text-white/35 print:text-black/45">
+              Preparado exclusivamente para
+            </p>
+            <p className="mt-2 font-display text-3xl font-light">{client.name}</p>
+            <p className="mt-1 text-sm text-white/45 print:text-black/55">
+              {[client.company, client.document, client.email].filter(Boolean).join('  ·  ')}
+            </p>
+          </section>
+        )}
+
+        {/* Itens */}
+        <section className="mt-16 flex-1">
+          <div className="flex items-baseline justify-between border-b border-white/15 pb-4 font-grotesque text-[10px] uppercase tracking-[.22em] text-white/40 print:border-black/20 print:text-black/50">
+            <span>Item / descrição</span>
+            <span>Valor</span>
           </div>
+          {items.map((service, i) => (
+            <div
+              key={service.id}
+              className="grid grid-cols-[auto_1fr_auto] items-start gap-6 border-b border-white/[.08] py-7 print:border-black/10"
+            >
+              <span className="font-grotesque text-xs font-semibold" style={{ color: BRASS }}>
+                {(i + 1).toString().padStart(2, '0')}
+              </span>
+              <div>
+                <h3 className="font-display text-xl font-normal leading-tight">{service.name}</h3>
+                {service.description && (
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/45 print:text-black/60">
+                    {service.description}
+                  </p>
+                )}
+              </div>
+              <strong className="whitespace-nowrap font-grotesque text-base font-semibold tabular-nums">
+                {money(service.price)}
+              </strong>
+            </div>
+          ))}
+        </section>
 
-          <div className="w-1/2 text-right">
-            <p className="text-xs uppercase tracking-widest text-white/65 print:text-black/60 mb-2">Investimento Total</p>
-            <p className="text-6xl font-black text-[#d8b879] print:text-[#8a642c] tracking-tighter">{formatCurrency(q.total)}</p>
+        {/* Total */}
+        <section className="mt-14 grid gap-10 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="max-w-md">
+            <p className="font-grotesque text-[10px] uppercase tracking-[.22em] text-white/35 print:text-black/45">
+              Observações e condições
+            </p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-white/50 print:text-black/60">
+              {q.notes}
+            </p>
+            <p className="mt-4 text-xs text-white/40 print:text-black/50">
+              Pagamento · <span className="text-white/70 print:text-black/70">{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</span>
+            </p>
           </div>
-        </div>
-
-        <div className="mt-10 grid gap-4 rounded-2xl border border-[#d8b879]/20 bg-[#d8b879]/[.06] p-6 md:grid-cols-3">
-          <div><p className="text-[9px] uppercase tracking-widest text-white/35 print:text-black/40">Validade</p><strong className="mt-1 block text-sm">{q.validityDays}</strong></div>
-          <div><p className="text-[9px] uppercase tracking-widest text-white/35 print:text-black/40">Cronograma</p><strong className="mt-1 block text-sm">{q.timeline}</strong></div>
-          <div><p className="text-[9px] uppercase tracking-widest text-white/35 print:text-black/40">Condição de pagamento</p><strong className="mt-1 block text-sm">{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</strong></div>
-        </div>
-
-        {/* Professional Footer */}
-        <div className="mt-32 border-t border-white/20 print:border-black/20 pt-12 flex flex-col gap-12">
-          {/* Signatures */}
-          <div className="flex justify-between px-12">
-            <div className="w-64 border-t border-white/40 print:border-black/40 pt-4 text-center">
-              <p className="font-bold text-sm uppercase">{company.name}</p>
-              <p className="text-xs text-white/50 print:text-black/50 mt-1">{company.cnpj}</p>
-            </div>
-            <div className="w-64 border-t border-white/40 print:border-black/40 pt-4 text-center">
-              <p className="font-bold text-sm uppercase">{client?.name || 'Cliente'}</p>
-              <p className="text-xs text-white/50 print:text-black/50 mt-1">De Acordo / Assinatura</p>
-            </div>
+          <div className="md:text-right">
+            <p className="font-grotesque text-[10px] uppercase tracking-[.22em] text-white/35 print:text-black/45">
+              Investimento total
+            </p>
+            <p
+              className="mt-1 font-display text-[3.6rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[4.4rem]"
+              style={{ color: BRASS }}
+            >
+              {money(q.total)}
+            </p>
           </div>
+        </section>
 
-          {/* Footer Info Block */}
-          <div className="bg-white/5 print:bg-black/5 rounded-xl p-8 flex justify-between items-center text-xs text-white/40 print:text-black/50">
-            <div>
-              <p className="font-bold text-white print:text-black mb-1">{company.name}</p>
-              <p>Este documento é estritamente confidencial.</p>
+        {/* Assinaturas */}
+        <footer className="mt-24 grid gap-12 border-t border-white/10 pt-14 print:border-black/15 md:grid-cols-2">
+          {[company.name, client?.name || 'Cliente'].map((name, idx) => (
+            <div key={idx} className="pt-10">
+              <div className="border-t border-white/25 print:border-black/40" />
+              <p className="mt-3 font-grotesque text-xs font-semibold uppercase tracking-[.14em]">{name}</p>
+              <p className="text-[10px] uppercase tracking-[.14em] text-white/35 print:text-black/45">
+                {idx === 0 ? company.cnpj || 'Emitente' : 'De acordo · assinatura'}
+              </p>
             </div>
-            <div className="text-right">
-              <p>{company.email} • {company.phone}</p>
-              <p>Emitido pelo sistema NEX CRM</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
+          ))}
+        </footer>
+      </article>
     </div>
   );
 };
