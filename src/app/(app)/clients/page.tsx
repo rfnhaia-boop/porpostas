@@ -41,7 +41,7 @@ export default function ClientsPage() {
         action={
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="text-brand-cyan uppercase tracking-widest text-xs font-bold hover:text-white flex items-center gap-2"
+            className="text-[#FF6A00] uppercase tracking-widest text-xs font-bold hover:text-[var(--foreground)] flex items-center gap-2"
           >
             <Plus size={16} /> Adicionar Cliente
           </button>
@@ -52,7 +52,7 @@ export default function ClientsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="liquid-glass p-10 rounded-[2rem] mb-12 border-brand-cyan/20"
+          className="liquid-glass p-10 rounded-[2rem] mb-12 border-[#FF6A00]/20"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <InputExpansivo label="Nome Completo" value={newClient.name || ''} onChange={e => setNewClient({...newClient, name: e.target.value})} />
@@ -65,21 +65,21 @@ export default function ClientsPage() {
       )}
 
       {!hydrated ? (
-        <p className="text-white/40 uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
+        <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clients.length === 0 && !isAdding && (
-            <p className="text-white/40 uppercase tracking-widest text-sm">Nenhum cliente cadastrado.</p>
+            <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm">Nenhum cliente cadastrado.</p>
           )}
           {clients.map(client => (
             <motion.div
               key={client.id}
               layout
-              className="liquid-glass p-8 rounded-3xl group relative hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-500"
+              className="liquid-glass p-8 rounded-3xl group relative hover:shadow-[0_0_30px_rgba(255,106,0,0.15)] transition-all duration-500"
             >
-              <h3 className="text-xl font-bold uppercase tracking-wide text-white mb-2">{client.name}</h3>
-              {client.company && <p className="text-brand-cyan text-sm uppercase tracking-widest mb-4">{client.company}</p>}
-              <div className="space-y-2 text-white/50 text-sm">
+              <h3 className="text-xl font-bold uppercase tracking-wide text-[var(--foreground)] mb-2">{client.name}</h3>
+              {client.company && <p className="text-[#FF6A00] text-sm uppercase tracking-widest mb-4">{client.company}</p>}
+              <div className="space-y-2 text-[var(--text-muted)] text-sm">
                 <p>Doc: {client.document || 'N/A'}</p>
                 <p>Email: {client.email || 'N/A'}</p>
               </div>

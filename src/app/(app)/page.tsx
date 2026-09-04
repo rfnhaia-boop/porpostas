@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-12 min-h-screen relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-cyan/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#FF6A00]/5 blur-[120px] rounded-full pointer-events-none" />
       
       <PageHeader 
         title="Dashboard" 
@@ -50,7 +50,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="liquid-glass p-8 rounded-3xl flex items-center justify-between group hover:shadow-[0_0_40px_rgba(34,211,238,0.2)] transition-shadow duration-500"
+              className="liquid-glass p-8 rounded-3xl flex items-center justify-between group hover:shadow-[0_0_40px_rgba(255,106,0,0.2)] transition-shadow duration-500"
             >
               <div>
                 <p className="text-[var(--text-muted)] uppercase tracking-widest text-xs mb-2">{stat.label}</p>
@@ -59,7 +59,7 @@ export default function Dashboard() {
                   <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-[#FF6A00]">{stat.sub}</p>
                 )}
               </div>
-              <div className="text-brand-cyan opacity-20">
+              <div className="text-[#FF6A00] opacity-20">
                 <Icon size={64} />
               </div>
             </motion.div>

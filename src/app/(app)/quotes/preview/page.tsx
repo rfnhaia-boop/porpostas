@@ -206,9 +206,9 @@ export default function PreviewPage() {
               </div>
             </div>
             <div className="mt-8 flex justify-end">
-              <button 
+              <button
                 onClick={() => setIsEditingSettings(false)}
-                className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs"
+                className="bg-[#FF6A00] text-[#0A0A0A] px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs"
               >
                 Salvar e Fechar
               </button>
@@ -218,21 +218,21 @@ export default function PreviewPage() {
       )}
 
       {isSharing && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-5 backdrop-blur-md no-print">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-[#0c0f0e] p-8 shadow-2xl md:p-10">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-5 backdrop-blur-md no-print">
+          <div className="w-full max-w-2xl rounded-[2rem] border border-[var(--border-color)] bg-[var(--panel-bg)] p-8 shadow-2xl md:p-10">
             <div className="mb-8 flex items-start justify-between">
-              <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.25em] text-[#FF7A1A]">Link com resposta</p><h2 className="text-3xl font-black tracking-tight text-white">Enviar ao cliente</h2><p className="mt-2 max-w-lg text-sm leading-6 text-white/75">O cliente abre uma página limpa, revisa o orçamento e registra “Aprovar” ou “Recusar” no próprio link.</p></div>
-              <button aria-label="Fechar" onClick={() => setIsSharing(false)} className="rounded-full border border-white/25 p-2 text-white/70 hover:text-white"><X size={18} /></button>
+              <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.25em] text-[#FF6A00]">Link com resposta</p><h2 className="text-3xl font-black tracking-tight text-[var(--foreground)]">Enviar ao cliente</h2><p className="mt-2 max-w-lg text-sm leading-6 text-[var(--text-muted)]">O cliente abre uma página limpa, revisa o orçamento e registra “Aprovar” ou “Recusar” no próprio link.</p></div>
+              <button aria-label="Fechar" onClick={() => setIsSharing(false)} className="rounded-full border border-[var(--border-color)] p-2 text-[var(--text-muted)] hover:text-[var(--foreground)]"><X size={18} /></button>
             </div>
-            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4">
-              <Link2 className="shrink-0 text-brand-cyan" size={20} />
-              <p className="min-w-0 flex-1 truncate text-xs text-white/75">{getShareUrl()}</p>
-              <button onClick={copyShareUrl} className="flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copiado' : 'Copiar'}</button>
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4">
+              <Link2 className="shrink-0 text-[#FF6A00]" size={20} />
+              <p className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">{getShareUrl()}</p>
+              <button onClick={copyShareUrl} className="flex shrink-0 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 py-2 text-xs font-bold text-[#0A0A0A]">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copiado' : 'Copiar'}</button>
             </div>
-            {typeof window !== 'undefined' && window.location.hostname === 'localhost' && <p className="mb-6 text-xs text-amber-300/70">Este endereço é local. Ao publicar o sistema, o mesmo botão gera automaticamente um link acessível ao cliente.</p>}
+            {typeof window !== 'undefined' && window.location.hostname === 'localhost' && <p className="mb-6 text-xs text-amber-500">Este endereço é local. Ao publicar o sistema, o mesmo botão gera um link acessível ao cliente.</p>}
             <div className="grid gap-3 sm:grid-cols-3">
-              <button onClick={() => window.open(getShareUrl(), '_blank', 'noopener,noreferrer')} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-4 text-sm font-bold hover:bg-white/5"><Eye size={18} /> Visualizar</button>
-              <button onClick={openEmail} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-4 text-sm font-bold hover:bg-white/5"><Mail size={18} /> E-mail</button>
+              <button onClick={() => window.open(getShareUrl(), '_blank', 'noopener,noreferrer')} className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)]"><Eye size={18} /> Visualizar</button>
+              <button onClick={openEmail} className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)]"><Mail size={18} /> E-mail</button>
               <button onClick={openWhatsApp} className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-5 py-4 text-sm font-black text-[#07170c]"><MessageCircle size={18} /> WhatsApp</button>
             </div>
           </div>
@@ -264,10 +264,10 @@ export default function PreviewPage() {
 
         <div className="flex gap-4">
           <button onClick={previewClientView} className="flex items-center gap-2 rounded-full border border-[var(--border-color)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--foreground)] transition-colors hover:bg-[var(--panel-bg)]"><Eye size={16} /> Visualizar</button>
-          <button onClick={handleSend} disabled={sendState === 'saving'} className="flex items-center gap-2 rounded-full border border-brand-cyan/30 bg-brand-cyan/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:opacity-50"><Send size={16} /> {sendState === 'saving' ? 'Preparando...' : 'Enviar'}</button>
-          <button 
+          <button onClick={handleSend} disabled={sendState === 'saving'} className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20 disabled:opacity-50"><Send size={16} /> {sendState === 'saving' ? 'Preparando...' : 'Enviar'}</button>
+          <button
             onClick={() => setIsEditingSettings(true)}
-            className="border border-white/10 text-white px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-white/5 transition-colors"
+            className="border border-[var(--border-color)] text-[var(--foreground)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-[var(--panel-bg)] transition-colors"
           >
             <SlidersHorizontal size={16} /> Ajustar
           </button>
@@ -278,9 +278,9 @@ export default function PreviewPage() {
           >
             <FileText size={16} /> {saveState === 'saving' ? 'Salvando...' : saveState === 'saved' ? 'Salvo!' : 'Salvar'}
           </button>
-          <button 
+          <button
             onClick={handlePrint}
-            className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all"
+            className="bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] text-[#0A0A0A] shadow-[0_0_20px_rgba(255,106,0,0.3)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(255,106,0,0.5)] transition-all"
           >
             <Printer size={16} /> Imprimir / PDF
           </button>

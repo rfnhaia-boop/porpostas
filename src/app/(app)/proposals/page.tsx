@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 const STATUS_LABEL: Record<Proposal['status'], { text: string; className: string }> = {
   draft: { text: 'Rascunho', className: 'text-[var(--text-muted)]' },
-  sent: { text: 'Enviada', className: 'text-brand-cyan' },
+  sent: { text: 'Enviada', className: 'text-[#FF6A00]' },
   approved: { text: 'Aprovada', className: 'text-green-500' },
   declined: { text: 'Recusada', className: 'text-red-500' },
 };

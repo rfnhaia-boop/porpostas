@@ -44,7 +44,7 @@ export default function ServicesPage() {
         action={
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="text-brand-cyan uppercase tracking-widest text-xs font-bold hover:text-white flex items-center gap-2"
+            className="text-[#FF6A00] uppercase tracking-widest text-xs font-bold hover:text-[var(--foreground)] flex items-center gap-2"
           >
             <Plus size={16} /> Adicionar Serviço
           </button>
@@ -55,7 +55,7 @@ export default function ServicesPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="liquid-glass p-10 rounded-[2rem] mb-12 border-brand-cyan/20"
+          className="liquid-glass p-10 rounded-[2rem] mb-12 border-[#FF6A00]/20"
         >
           <div className="grid grid-cols-1 gap-8 mb-8">
             <InputExpansivo label="Nome do Serviço" value={newService.name || ''} onChange={e => setNewService({...newService, name: e.target.value})} />
@@ -69,23 +69,23 @@ export default function ServicesPage() {
       )}
 
       {!hydrated ? (
-        <p className="text-white/40 uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
+        <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
       ) : (
         <div className="flex flex-col gap-4">
           {savedServices.length === 0 && !isAdding && (
-            <p className="text-white/40 uppercase tracking-widest text-sm">Nenhum serviço cadastrado.</p>
+            <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm">Nenhum serviço cadastrado.</p>
           )}
           {savedServices.map(service => (
             <motion.div
               key={service.id}
               layout
-              className="liquid-glass p-8 rounded-3xl flex justify-between items-center group relative pr-16 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-500"
+              className="liquid-glass p-8 rounded-3xl flex justify-between items-center group relative pr-16 hover:shadow-[0_0_30px_rgba(255,106,0,0.15)] transition-all duration-500"
             >
               <div>
-                <h3 className="text-xl font-bold uppercase tracking-wide text-white mb-2">{service.name}</h3>
-                <p className="text-white/50 text-sm max-w-2xl">{service.description}</p>
+                <h3 className="text-xl font-bold uppercase tracking-wide text-[var(--foreground)] mb-2">{service.name}</h3>
+                <p className="text-[var(--text-muted)] text-sm max-w-2xl">{service.description}</p>
               </div>
-              <div className="text-3xl font-black text-brand-cyan">
+              <div className="text-3xl font-black text-[#FF6A00]">
                 {formatCurrency(service.price)}
               </div>
 
