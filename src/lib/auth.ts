@@ -13,6 +13,20 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
 
+  // Só ativa o botão "Entrar com Google" quando as credenciais existirem no
+  // .env (ver GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) — sem elas o app roda
+  // normal só com e-mail/senha.
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        },
+      }
+    : {}),
+
   user: {
     // Cada usuário pertence a uma Company. Não é aceito do cliente — resolvido no hook abaixo.
     additionalFields: {

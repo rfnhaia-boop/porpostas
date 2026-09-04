@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signUp } from '@/lib/auth-client';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -36,6 +37,14 @@ export default function SignupPage() {
     <div className="liquid-glass rounded-[2rem] p-10">
       <h2 className="text-2xl font-black uppercase tracking-tight text-[var(--foreground)] mb-1">Criar conta</h2>
       <p className="text-sm text-[var(--text-muted)] mb-8">Sua empresa é criada junto com o cadastro.</p>
+
+      <GoogleButton label="Criar conta com Google" />
+
+      <div className="flex items-center gap-4 my-6">
+        <div className="h-px flex-1 bg-[var(--border-color)]" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">ou</span>
+        <div className="h-px flex-1 bg-[var(--border-color)]" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
