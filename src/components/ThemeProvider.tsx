@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -14,45 +14,43 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => null,
 });
 
+const STORAGE_KEY = 'nex-theme';
+
+function applyClass(theme: Theme) {
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
-  const [mounted, setMounted] = useState(false);
+  // O script inline no <head> (layout.tsx) já aplicou a classe antes do React hidratar.
+  // Aqui só lemos o estado atual — no servidor cai no default 'dark'.
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof document === 'undefined') return 'dark';
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  });
 
   useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem('nex-theme') as Theme | null;
-    if (stored) {
-      setThemeState(stored);
-      if (stored === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } else {
-      // Default to dark
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('nex-theme', 'dark');
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+      const next: Theme = stored ?? 'dark';
+      setThemeState(next);
+      applyClass(next);
+      if (!stored) localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* localStorage indisponível */
     }
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('nex-theme', newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next);
+    applyClass(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* ignore */
     }
-  };
+  }, []);
 
-  // Render children normally. We suppress hydration warnings on the html tag in layout.tsx.
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      <div style={{ visibility: mounted ? 'visible' : 'hidden', display: 'contents' }}>
-        {children}
-      </div>
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = () => useContext(ThemeContext);

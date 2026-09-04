@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: 'Propostas Arquiteturais de Alta Performance',
 };
 
+// Aplica o tema (classe .dark no <html>) antes do React hidratar — sem flash, sem mismatch.
+const themeScript = `(function(){try{var t=localStorage.getItem('nex-theme')||'dark';document.documentElement.classList.toggle('dark',t!=='light');}catch(e){document.documentElement.classList.add('dark');}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -18,6 +21,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
