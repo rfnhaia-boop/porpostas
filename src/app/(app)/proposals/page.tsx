@@ -97,6 +97,7 @@ export default function ProposalsPage() {
       timeline: p.timeline,
       paymentTerms: p.paymentTerms,
       notes: p.notes,
+      accessPhrase: p.accessPhrase,
       items: p.items.map((it) => ({ name: it.name, description: it.description, price: it.price })),
     });
     router.push('/quotes/preview');

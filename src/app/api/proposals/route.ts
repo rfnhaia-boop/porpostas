@@ -42,6 +42,10 @@ export async function POST(request: NextRequest) {
 
   const total = items.reduce((sum, it) => sum + it.price, 0);
   const status = body?.status === 'sent' ? 'sent' : 'draft';
+  const accessPhrase =
+    typeof body?.accessPhrase === 'string' && body.accessPhrase.trim()
+      ? body.accessPhrase.trim().slice(0, 100)
+      : null;
 
   const proposal = await prisma.proposal.create({
     data: {
@@ -53,6 +57,7 @@ export async function POST(request: NextRequest) {
       timeline: typeof body?.timeline === 'string' ? body.timeline : '30 dias úteis',
       paymentTerms: typeof body?.paymentTerms === 'string' ? body.paymentTerms : '',
       notes: typeof body?.notes === 'string' ? body.notes : '',
+      accessPhrase,
       total,
       status,
       items: { create: items },

@@ -56,6 +56,8 @@ export default function PreviewPage() {
     return `${safeN}x mensais de ${formatBRL(per)}`;
   };
 
+  const accessPhrase = quoteDraft.accessPhrase.trim() || null;
+
   const buildPayload = () => ({
     clientId: quoteDraft.clientId,
     template: quoteDraft.template,
@@ -64,6 +66,7 @@ export default function PreviewPage() {
     timeline: quoteDraft.timeline,
     paymentTerms,
     notes: quoteDraft.notes,
+    accessPhrase,
     items: quoteDraft.services.map((s) => ({
       name: s.name,
       description: s.description,
@@ -81,6 +84,7 @@ export default function PreviewPage() {
         timeline: quoteDraft.timeline,
         paymentTerms,
         notes: quoteDraft.notes,
+        accessPhrase,
         items: buildPayload().items,
         status,
       });
@@ -139,13 +143,23 @@ export default function PreviewPage() {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2200);
   };
+  const firstName = client?.name?.trim().split(/\s+/)[0] || '';
+  const phraseLine = accessPhrase ? `\n\nPalavra-chave para abrir: ${accessPhrase}` : '';
   const openEmail = () => {
-    const subject = encodeURIComponent(`Orçamento ${quoteDraft.proposalNumber} — ${companyInfo.name}`);
-    const body = encodeURIComponent(`Olá, ${client?.name}.\n\nPreparei seu orçamento. Você pode visualizar e responder pelo link:\n${getShareUrl()}\n\nObrigado!`);
+    const subject = encodeURIComponent(`Proposta ${quoteDraft.proposalNumber} — ${companyInfo.name}`);
+    const body = encodeURIComponent(
+      `Olá, ${firstName || client?.name || ''}!\n\n` +
+        `A ${companyInfo.name} preparou uma proposta para você. Você pode revisar e responder (aprovar, recusar ou pedir ajuste) direto pelo link:\n\n` +
+        `${getShareUrl()}${phraseLine}\n\n` +
+        `Qualquer dúvida é só responder este e-mail.\n${companyInfo.name}`,
+    );
     window.location.href = `mailto:${client?.email || ''}?subject=${subject}&body=${body}`;
   };
   const openWhatsApp = () => {
-    const text = encodeURIComponent(`Olá, ${client?.name}! Seu orçamento ${quoteDraft.proposalNumber} está pronto. Visualize e responda aqui: ${getShareUrl()}`);
+    const text = encodeURIComponent(
+      `Olá, ${firstName || client?.name || ''}! Aqui é da ${companyInfo.name}. ` +
+        `Preparei sua proposta ${quoteDraft.proposalNumber} — dá pra revisar e já responder pelo link:\n${getShareUrl()}${phraseLine}`,
+    );
     window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
   };
   const previewClientView = async () => {
@@ -241,9 +255,20 @@ export default function PreviewPage() {
                 </div>
               </div>
               <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Palavra-chave do link (opcional)</label>
+                <input
+                  type="text"
+                  value={quoteDraft.accessPhrase}
+                  onChange={(e) => updateQuoteDraft({ accessPhrase: e.target.value })}
+                  placeholder="ex: gustavo2026 — deixe vazio pra link aberto"
+                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2 placeholder:text-sm placeholder:font-normal placeholder:text-[var(--text-muted)]"
+                />
+                <p className="mt-1 text-[10px] text-[var(--text-muted)]">Se preenchida, o cliente precisa digitar essa palavra pra abrir a proposta. Você manda ela junto com o link.</p>
+              </div>
+              <div>
                 <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Observações / Termos</label>
-                <textarea 
-                  value={quoteDraft.notes} 
+                <textarea
+                  value={quoteDraft.notes}
                   onChange={(e) => updateQuoteDraft({ notes: e.target.value })}
                   className="w-full bg-[var(--background)] border border-[var(--border-color)] rounded-lg p-4 text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] min-h-[120px]"
                 />
@@ -268,11 +293,18 @@ export default function PreviewPage() {
               <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.25em] text-[#FF6A00]">Link com resposta</p><h2 className="text-3xl font-black tracking-tight text-[var(--foreground)]">Enviar ao cliente</h2><p className="mt-2 max-w-lg text-sm leading-6 text-[var(--text-muted)]">O cliente abre uma página limpa, revisa o orçamento e registra “Aprovar” ou “Recusar” no próprio link.</p></div>
               <button aria-label="Fechar" onClick={() => setIsSharing(false)} className="rounded-full border border-[var(--border-color)] p-2 text-[var(--text-muted)] hover:text-[var(--foreground)]"><X size={18} /></button>
             </div>
-            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4">
+            <div className="mb-3 flex items-center gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4">
               <Link2 className="shrink-0 text-[#FF6A00]" size={20} />
               <p className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">{getShareUrl()}</p>
               <button onClick={copyShareUrl} className="flex shrink-0 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 py-2 text-xs font-bold text-[#0A0A0A]">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copiado' : 'Copiar'}</button>
             </div>
+            {accessPhrase && (
+              <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#FF6A00]/30 bg-[#FF6A00]/5 p-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#FF6A00]">Palavra-chave</span>
+                <p className="min-w-0 flex-1 truncate text-sm font-bold text-[var(--foreground)]">{accessPhrase}</p>
+                <span className="text-[10px] text-[var(--text-muted)]">mande junto com o link</span>
+              </div>
+            )}
             {typeof window !== 'undefined' && window.location.hostname === 'localhost' && <p className="mb-6 text-xs text-amber-500">Este endereço é local. Ao publicar o sistema, o mesmo botão gera um link acessível ao cliente.</p>}
             <div className="grid gap-3 sm:grid-cols-3">
               <button onClick={() => window.open(getShareUrl(), '_blank', 'noopener,noreferrer')} className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)]"><Eye size={18} /> Visualizar</button>

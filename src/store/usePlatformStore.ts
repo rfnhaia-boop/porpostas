@@ -34,6 +34,7 @@ export interface QuoteDraft {
   paymentTerms: string;
   notes: string;
   timeline: string;
+  accessPhrase: string; // palavra-chave do link ('' = link aberto)
   // Preenchidos quando o rascunho é uma proposta existente sendo editada.
   proposalId: string | null;
   publicToken: string | null;
@@ -50,6 +51,7 @@ export interface EditableProposal {
   timeline: string;
   paymentTerms: string;
   notes: string;
+  accessPhrase: string | null;
   items: { name: string; description: string; price: number }[];
 }
 
@@ -116,6 +118,7 @@ const initialQuoteDraft: QuoteDraft = {
   paymentTerms: '50% na aprovação e 50% na entrega',
   notes: 'Condições de pagamento a combinar. Este documento é confidencial.',
   timeline: '30 dias úteis',
+  accessPhrase: '',
   proposalId: null,
   publicToken: null,
 };
@@ -229,6 +232,7 @@ export const usePlatformStore = create<PlatformState>()(
             paymentTerms: p.paymentTerms,
             notes: p.notes,
             timeline: p.timeline,
+            accessPhrase: p.accessPhrase ?? '',
             proposalId: p.id,
             publicToken: p.publicToken,
           },

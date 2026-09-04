@@ -53,6 +53,7 @@ export interface Proposal {
   status: ProposalStatus;
   publicToken: string;
   responseNote: string | null;
+  accessPhrase: string | null;
   viewedAt: string | null;
   viewCount: number;
   createdAt: string;
@@ -125,12 +126,17 @@ export const api = {
       paymentTerms: string;
       notes: string;
       status?: 'draft' | 'sent';
+      accessPhrase?: string | null;
       items: { name: string; description: string; price: number }[];
     }) => request<Proposal>('/api/proposals', { method: 'POST', body: JSON.stringify(data) }),
     update: (
       id: string,
       data: Partial<
-        { status: ProposalStatus; items: { name: string; description: string; price: number }[] } & Pick<
+        {
+          status: ProposalStatus;
+          accessPhrase: string | null;
+          items: { name: string; description: string; price: number }[];
+        } & Pick<
           Proposal,
           'proposalNumber' | 'template' | 'validityDays' | 'timeline' | 'paymentTerms' | 'notes'
         >

@@ -30,6 +30,10 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   for (const key of ['proposalNumber', 'template', 'validityDays', 'timeline', 'paymentTerms', 'notes'] as const) {
     if (typeof body[key] === 'string') data[key] = body[key];
   }
+  if ('accessPhrase' in body) {
+    const p = typeof body.accessPhrase === 'string' ? body.accessPhrase.trim() : '';
+    data.accessPhrase = p ? p.slice(0, 100) : null;
+  }
   if (typeof body.status === 'string' && (STATUSES as readonly string[]).includes(body.status)) {
     data.status = body.status;
     if (body.status === 'approved' || body.status === 'declined') data.respondedAt = new Date();

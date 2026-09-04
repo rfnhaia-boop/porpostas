@@ -152,6 +152,7 @@ model Proposal {
   total          Int       @default(0) // centavos
   status         String    @default("draft") // draft | sent | approved | declined
   publicToken    String    @unique @default(nanoid(12)) // link público: /p/<token>
+  accessPhrase   String?   // palavra-chave opcional; se setada, o link exige ela pra abrir
   responseNote   String?   // observação opcional que o cliente deixa ao responder
   viewedAt       DateTime? // 1ª vez que o cliente abriu o link
   viewCount      Int       @default(0)
