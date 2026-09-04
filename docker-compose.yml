@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nex_quotes_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nex_quotes
+      POSTGRES_PASSWORD: nex_quotes_dev
+      POSTGRES_DB: nex_quotes
+    ports:
+      - "5435:5432"
+    volumes:
+      - nex_quotes_pgdata:/var/lib/postgresql/data
+
+volumes:
+  nex_quotes_pgdata:

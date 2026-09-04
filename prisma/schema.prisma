@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Tenant. Cada usuário pertence a uma Company; todo dado é isolado por ela.
+model Company {
+  id        String   @id @default(cuid())
+  name      String   @default("Minha Empresa")
+  cnpj      String   @default("")
+  logoUrl   String   @default("")
+  email     String   @default("")
+  phone     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  clients       Client[]
+  services      Service[]
+  proposals     Proposal[]
+  notifications Notification[]
+}
+
+/// Notificação in-app para o dono (cliente visualizou / respondeu uma proposta).
+model Notification {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type       String   // proposal_viewed | proposal_approved | proposal_declined
+  message    String
+  proposalId String?
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, readAt])
+}
+
+// ---------------------------------------------------------------------------
+// Autenticação (Better Auth). Tabelas geradas conforme o adapter Prisma.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // vínculo com o tenant
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  sessions Session[]
+  accounts Account[]
+
+  @@index([companyId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  issuer                String?
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  orgName   String   @default("") // nome da empresa do cliente
+  document  String   @default("") // CPF / CNPJ
+  email     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  proposals Proposal[]
+
+  @@index([companyId])
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  price       Int      @default(0) // centavos
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Proposal {
+  id             String    @id @default(cuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientId       String?
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  proposalNumber String
+  template       String    @default("cyber")
+  validityDays   String    @default("15 Dias")
+  timeline       String    @default("30 dias úteis")
+  paymentTerms   String    @default("")
+  notes          String    @default("")
+  total          Int       @default(0) // centavos
+  status         String    @default("draft") // draft | sent | approved | declined
+  publicToken    String    @unique @default(nanoid(12)) // link público: /p/<token>
+  responseNote   String?   // observação opcional que o cliente deixa ao responder
+  viewedAt       DateTime? // 1ª vez que o cliente abriu o link
+  viewCount      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  respondedAt    DateTime?
+
+  items ProposalItem[]
+
+  @@index([companyId])
+  @@index([clientId])
+}
+
+/// Snapshot dos serviços no momento em que a proposta foi salva.
+model ProposalItem {
+  id          String   @id @default(cuid())
+  proposalId  String
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  price       Int      @default(0) // centavos
+
+  @@index([proposalId])
+}

@@ -1,0 +1,312 @@
+'use client';
+
+import React, { useState } from 'react';
+import { usePlatformStore } from '@/store/usePlatformStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X } from 'lucide-react';
+import { TemplateCyber } from '@/components/templates/TemplateCyber';
+import { TemplateMinimalista } from '@/components/templates/TemplateMinimalista';
+import { TemplateExecutivo } from '@/components/templates/TemplateExecutivo';
+import { TemplateEscopo } from '@/components/templates/TemplateEscopo';
+import { TemplateEssencial } from '@/components/templates/TemplateEssencial';
+import { TemplateDetalhado } from '@/components/templates/TemplateDetalhado';
+import { api } from '@/lib/api';
+
+const TEMPLATES = [
+  { id: 'cyber', name: 'Premium Digital' },
+  { id: 'minimalista', name: 'Editorial' },
+  { id: 'executivo', name: 'Corporativo' },
+  { id: 'escopo', name: 'Escopo de Projeto' },
+  { id: 'essencial', name: 'Orçamento Essencial' },
+  { id: 'detalhado', name: 'Orçamento Detalhado' },
+] as const;
+
+export default function PreviewPage() {
+  const router = useRouter();
+  const { quoteDraft, updateQuoteDraft, clients, companyInfo } = usePlatformStore();
+  const activeTemplate = quoteDraft.template || 'cyber';
+
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [sendState, setSendState] = useState<'idle' | 'saving'>('idle');
+  // Proposta persistida: já vem preenchida se estamos editando uma proposta existente.
+  const [saved, setSaved] = useState<{ id: string; publicToken: string } | null>(
+    quoteDraft.proposalId && quoteDraft.publicToken
+      ? { id: quoteDraft.proposalId, publicToken: quoteDraft.publicToken }
+      : null,
+  );
+  const paymentTerms = quoteDraft.paymentTerms || '50% na aprovação e 50% na entrega';
+
+  const buildPayload = () => ({
+    clientId: quoteDraft.clientId,
+    template: quoteDraft.template,
+    proposalNumber: quoteDraft.proposalNumber,
+    validityDays: quoteDraft.validityDays,
+    timeline: quoteDraft.timeline,
+    paymentTerms,
+    notes: quoteDraft.notes,
+    items: quoteDraft.services.map((s) => ({
+      name: s.name,
+      description: s.description,
+      price: s.price,
+    })),
+  });
+
+  // Cria a proposta na 1ª vez; nas seguintes atualiza os campos, os itens e o status.
+  const persistProposal = async (status: 'draft' | 'sent') => {
+    if (saved) {
+      await api.proposals.update(saved.id, {
+        proposalNumber: quoteDraft.proposalNumber,
+        template: quoteDraft.template,
+        validityDays: quoteDraft.validityDays,
+        timeline: quoteDraft.timeline,
+        paymentTerms,
+        notes: quoteDraft.notes,
+        items: buildPayload().items,
+        status,
+      });
+      return saved;
+    }
+    const created = await api.proposals.create({ ...buildPayload(), status });
+    const next = { id: created.id, publicToken: created.publicToken };
+    setSaved(next);
+    return next;
+  };
+
+  const handleSaveProposal = async () => {
+    if (saveState === 'saving') return;
+    setSaveState('saving');
+    try {
+      await persistProposal('draft');
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 2000);
+    } catch (err) {
+      setSaveState('idle');
+      alert(err instanceof Error ? err.message : 'Erro ao salvar a proposta.');
+    }
+  };
+
+  const handleSend = async () => {
+    if (sendState === 'saving') return;
+    setSendState('saving');
+    try {
+      await persistProposal('sent');
+      setIsSharing(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao preparar o envio.');
+    } finally {
+      setSendState('idle');
+    }
+  };
+
+  if (quoteDraft.services.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center no-print">
+        <p className="text-[var(--text-muted)] font-semibold tracking-widest uppercase">Orçamento inválido.</p>
+        <button onClick={() => router.push('/quotes/new')} className="ml-4 text-[#FF6A00]">Voltar</button>
+      </div>
+    );
+  }
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const client = clients.find((item) => item.id === quoteDraft.clientId);
+  const getShareUrl = () =>
+    saved ? `${window.location.origin}/p/${saved.publicToken}` : '';
+  const copyShareUrl = async () => {
+    await navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2200);
+  };
+  const openEmail = () => {
+    const subject = encodeURIComponent(`Orçamento ${quoteDraft.proposalNumber} — ${companyInfo.name}`);
+    const body = encodeURIComponent(`Olá, ${client?.name}.\n\nPreparei seu orçamento. Você pode visualizar e responder pelo link:\n${getShareUrl()}\n\nObrigado!`);
+    window.location.href = `mailto:${client?.email || ''}?subject=${subject}&body=${body}`;
+  };
+  const openWhatsApp = () => {
+    const text = encodeURIComponent(`Olá, ${client?.name}! Seu orçamento ${quoteDraft.proposalNumber} está pronto. Visualize e responda aqui: ${getShareUrl()}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+  const previewClientView = async () => {
+    try {
+      const p = await persistProposal('draft');
+      window.open(`${window.location.origin}/p/${p.publicToken}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao abrir a visualização.');
+    }
+  };
+
+  return (
+    <main className="min-h-screen flex flex-col bg-[var(--background)] print:bg-white print:text-black transition-colors">
+      {/* Settings Modal */}
+      {isEditingSettings && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm no-print">
+          <div className="bg-[var(--panel-bg)] p-12 rounded-3xl w-full max-w-xl border border-[var(--border-color)]">
+            <h2 className="text-2xl font-black uppercase tracking-widest mb-8 text-[var(--foreground)]">Ajustes do Orçamento</h2>
+            <div className="space-y-6">
+              <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Nº da Proposta</label>
+                <input 
+                  type="text" 
+                  value={quoteDraft.proposalNumber} 
+                  onChange={(e) => updateQuoteDraft({ proposalNumber: e.target.value })}
+                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
+                />
+              </div>
+              <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Validade</label>
+                <input 
+                  type="text" 
+                  value={quoteDraft.validityDays} 
+                  onChange={(e) => updateQuoteDraft({ validityDays: e.target.value })}
+                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
+                />
+              </div>
+              <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Prazo Estimado</label>
+                <input 
+                  type="text" 
+                  value={quoteDraft.timeline} 
+                  onChange={(e) => updateQuoteDraft({ timeline: e.target.value })}
+                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
+                />
+              </div>
+              <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Condição de pagamento</label>
+                <input 
+                  type="text" 
+                  value={paymentTerms} 
+                  onChange={(e) => updateQuoteDraft({ paymentTerms: e.target.value })} 
+                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2" 
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {['À vista', '50% na aprovação e 50% na entrega', '30/60 dias'].map((value) => (
+                    <button 
+                      key={value} 
+                      onClick={() => updateQuoteDraft({ paymentTerms: value })} 
+                      className="rounded-full border border-[var(--border-color)] px-3 py-1 text-[10px] text-[var(--text-muted)] hover:border-[#FF6A00] hover:text-[#FF6A00]"
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Observações / Termos</label>
+                <textarea 
+                  value={quoteDraft.notes} 
+                  onChange={(e) => updateQuoteDraft({ notes: e.target.value })}
+                  className="w-full bg-[var(--background)] border border-[var(--border-color)] rounded-lg p-4 text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] min-h-[120px]"
+                />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end">
+              <button 
+                onClick={() => setIsEditingSettings(false)}
+                className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs"
+              >
+                Salvar e Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSharing && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-5 backdrop-blur-md no-print">
+          <div className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-[#0c0f0e] p-8 shadow-2xl md:p-10">
+            <div className="mb-8 flex items-start justify-between">
+              <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.25em] text-[#FF7A1A]">Link com resposta</p><h2 className="text-3xl font-black tracking-tight text-white">Enviar ao cliente</h2><p className="mt-2 max-w-lg text-sm leading-6 text-white/75">O cliente abre uma página limpa, revisa o orçamento e registra “Aprovar” ou “Recusar” no próprio link.</p></div>
+              <button aria-label="Fechar" onClick={() => setIsSharing(false)} className="rounded-full border border-white/25 p-2 text-white/70 hover:text-white"><X size={18} /></button>
+            </div>
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4">
+              <Link2 className="shrink-0 text-brand-cyan" size={20} />
+              <p className="min-w-0 flex-1 truncate text-xs text-white/75">{getShareUrl()}</p>
+              <button onClick={copyShareUrl} className="flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copiado' : 'Copiar'}</button>
+            </div>
+            {typeof window !== 'undefined' && window.location.hostname === 'localhost' && <p className="mb-6 text-xs text-amber-300/70">Este endereço é local. Ao publicar o sistema, o mesmo botão gera automaticamente um link acessível ao cliente.</p>}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <button onClick={() => window.open(getShareUrl(), '_blank', 'noopener,noreferrer')} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-4 text-sm font-bold hover:bg-white/5"><Eye size={18} /> Visualizar</button>
+              <button onClick={openEmail} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-4 text-sm font-bold hover:bg-white/5"><Mail size={18} /> E-mail</button>
+              <button onClick={openWhatsApp} className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-5 py-4 text-sm font-black text-[#07170c]"><MessageCircle size={18} /> WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header/Controls (Not part of the actual quote, hidden on print via no-print) */}
+      <header className="fixed top-0 left-64 z-50 flex w-[calc(100%-16rem)] flex-wrap items-center justify-between gap-3 px-6 py-3 liquid-glass no-print">
+        <button 
+          onClick={() => router.push('/quotes/new')}
+          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--foreground)] uppercase tracking-widest text-xs font-bold"
+        >
+          <ArrowLeft size={16} /> Voltar
+        </button>
+        
+        <div className="flex max-w-[46vw] gap-2 overflow-x-auto py-1">
+          {TEMPLATES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => updateQuoteDraft({ template: t.id })}
+              className={`px-4 py-2 rounded-full uppercase tracking-widest text-[10px] transition-all ${
+                activeTemplate === t.id ? 'bg-[var(--foreground)] text-[var(--background)] font-bold' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] border border-[var(--border-color)]'
+              }`}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-4">
+          <button onClick={previewClientView} className="flex items-center gap-2 rounded-full border border-[var(--border-color)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--foreground)] transition-colors hover:bg-[var(--panel-bg)]"><Eye size={16} /> Visualizar</button>
+          <button onClick={handleSend} disabled={sendState === 'saving'} className="flex items-center gap-2 rounded-full border border-brand-cyan/30 bg-brand-cyan/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-brand-cyan transition-colors hover:bg-brand-cyan/20 disabled:opacity-50"><Send size={16} /> {sendState === 'saving' ? 'Preparando...' : 'Enviar'}</button>
+          <button 
+            onClick={() => setIsEditingSettings(true)}
+            className="border border-white/10 text-white px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-white/5 transition-colors"
+          >
+            <SlidersHorizontal size={16} /> Ajustar
+          </button>
+          <button
+            onClick={handleSaveProposal}
+            disabled={saveState === 'saving'}
+            className="border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FF6A00] hover:text-[#0A0A0A] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all disabled:opacity-50"
+          >
+            <FileText size={16} /> {saveState === 'saving' ? 'Salvando...' : saveState === 'saved' ? 'Salvo!' : 'Salvar'}
+          </button>
+          <button 
+            onClick={handlePrint}
+            className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all"
+          >
+            <Printer size={16} /> Imprimir / PDF
+          </button>
+        </div>
+      </header>
+
+      {/* Render Active Template */}
+      <div className="flex-1 mt-20 relative print-only">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTemplate}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="w-full min-h-full"
+          >
+            {activeTemplate === 'cyber' && <TemplateCyber />}
+            {activeTemplate === 'minimalista' && <TemplateMinimalista />}
+            {activeTemplate === 'executivo' && <TemplateExecutivo />}
+            {activeTemplate === 'escopo' && <TemplateEscopo />}
+            {activeTemplate === 'essencial' && <TemplateEssencial />}
+            {activeTemplate === 'detalhado' && <TemplateDetalhado />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </main>
+  );
+}
