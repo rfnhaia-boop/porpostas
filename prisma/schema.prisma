@@ -157,7 +157,7 @@ model Proposal {
   notes          String    @default("")
   total          Int       @default(0) // centavos
   status         String    @default("draft") // draft|sent|approved|declined|changes_requested|in_progress|delivered
-  publicToken    String    @unique @default(nanoid(12)) // link público: /p/<token>
+  publicToken    String    @unique // link público: /p/<token> — gerado em app code (lib/token.ts), só A-Za-z0-9
   accessPhrase   String?   // palavra-chave opcional; se setada, o link exige ela pra abrir
   responseNote   String?   // observação opcional que o cliente deixa ao responder
   viewedAt       DateTime? // 1ª vez que o cliente abriu o link
