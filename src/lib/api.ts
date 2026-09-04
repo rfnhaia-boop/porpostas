@@ -19,6 +19,14 @@ export interface Client {
   createdAt: string;
 }
 
+export interface ClientPunctuality {
+  chronicLate: boolean;
+  consecutiveLate: number;
+  avgDelayDays: number | null;
+  lastDelays: { dueDate: string; delayDays: number }[];
+  suggestion: string | null;
+}
+
 export type CatalogKind = 'service' | 'product';
 
 export interface Service {
@@ -155,6 +163,7 @@ export const api = {
     update: (id: string, data: Partial<Pick<Client, 'name' | 'orgName' | 'document' | 'email'>>) =>
       request<Client>(`/api/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/api/clients/${id}`, { method: 'DELETE' }),
+    insight: (id: string) => request<ClientPunctuality>(`/api/clients/${id}/insight`),
   },
   services: {
     list: () => request<Service[]>('/api/services'),

@@ -1,10 +1,28 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Payment, type Proposal } from '@/lib/api';
 import { formatBRL, toCents } from '@/lib/money';
-import { CheckCircle2, Circle, FileText, Paperclip, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Circle, FileText, Paperclip, Trash2, Upload, X } from 'lucide-react';
+
+function PunctualityBanner({ clientId }: { clientId: string }) {
+  const { data } = useQuery({
+    queryKey: ['clientInsight', clientId],
+    queryFn: () => api.clients.insight(clientId),
+  });
+  if (!data?.chronicLate) return null;
+
+  return (
+    <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex gap-3 items-start">
+      <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Cliente atrasa recorrente</p>
+        <p className="text-sm text-[var(--foreground)]">{data.suggestion}</p>
+      </div>
+    </div>
+  );
+}
 
 function fmtDate(iso: string | null) {
   if (!iso) return null;
@@ -383,6 +401,7 @@ export default function ExecutionModal({ proposal, onClose }: { proposal: Propos
         </div>
 
         <div className="space-y-6">
+          {proposal.clientId && <PunctualityBanner clientId={proposal.clientId} />}
           <ContractBox proposal={proposal} />
           {proposal.payments.length === 0 ? (
             <PlanForm proposalId={proposal.id} />
