@@ -2,12 +2,17 @@ import { prisma } from './prisma';
 import { Resend } from 'resend';
 import { formatBRL as money } from './money';
 
-export type NotifyType = 'proposal_viewed' | 'proposal_approved' | 'proposal_declined';
+export type NotifyType =
+  | 'proposal_viewed'
+  | 'proposal_approved'
+  | 'proposal_declined'
+  | 'proposal_changes_requested';
 
-const VERB: Record<NotifyType, string> = {
-  proposal_viewed: 'visualizou',
-  proposal_approved: 'APROVOU',
-  proposal_declined: 'recusou',
+const MESSAGE: Record<NotifyType, (num: string) => string> = {
+  proposal_viewed: (n) => `visualizou a proposta ${n}`,
+  proposal_approved: (n) => `APROVOU a proposta ${n}`,
+  proposal_declined: (n) => `recusou a proposta ${n}`,
+  proposal_changes_requested: (n) => `pediu alteração na proposta ${n}`,
 };
 
 /**
@@ -24,7 +29,7 @@ export async function notifyProposalEvent(opts: {
   note?: string | null;
 }) {
   const who = opts.clientName || 'O cliente';
-  const message = `${who} ${VERB[opts.type]} a proposta ${opts.proposalNumber}`;
+  const message = `${who} ${MESSAGE[opts.type](opts.proposalNumber)}`;
 
   try {
     await prisma.notification.create({

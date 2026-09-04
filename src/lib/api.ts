@@ -36,7 +36,7 @@ export interface ProposalItem {
   price: number;
 }
 
-export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'declined';
+export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'changes_requested';
 
 export interface Proposal {
   id: string;
@@ -60,7 +60,7 @@ export interface Proposal {
   items: ProposalItem[];
 }
 
-export type NotificationType = 'proposal_viewed' | 'proposal_approved' | 'proposal_declined';
+export type NotificationType = 'proposal_viewed' | 'proposal_approved' | 'proposal_declined' | 'proposal_changes_requested';
 
 export interface AppNotification {
   id: string;

@@ -16,7 +16,7 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
   return Response.json(proposal);
 }
 
-const STATUSES = ['draft', 'sent', 'approved', 'declined'] as const;
+const STATUSES = ['draft', 'sent', 'approved', 'declined', 'changes_requested'] as const;
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   const { id } = await params;

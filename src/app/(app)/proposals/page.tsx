@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<Proposal['status'], { text: string; className: string
   sent: { text: 'Enviada', className: 'text-[#FF6A00]' },
   approved: { text: 'Aprovada', className: 'text-green-500' },
   declined: { text: 'Recusada', className: 'text-red-500' },
+  changes_requested: { text: 'Alteração pedida', className: 'text-blue-500' },
 };
 
 function timeAgo(iso: string) {

@@ -67,7 +67,7 @@ export default async function PublicProposalPage({ params }: Props) {
 
       <ClientResponse
         token={token}
-        initialStatus={proposal.status as 'draft' | 'sent' | 'approved' | 'declined'}
+        initialStatus={proposal.status as 'draft' | 'sent' | 'approved' | 'declined' | 'changes_requested'}
         initialNote={proposal.responseNote}
       />
     </main>
