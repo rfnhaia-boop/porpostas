@@ -169,4 +169,21 @@ html.dark { color-scheme: dark; }
     text-shadow: none !important;
     color: black !important;
   }
+
+  /* Templates escuros (Cyber, Escopo): tornar o acento legível no papel */
+  [class*="text-brand-cyan"] { color: #7c2d12 !important; }
+  [class*="border-brand-cyan"] { border-color: rgba(0, 0, 0, 0.25) !important; }
+  [class*="bg-brand-cyan"] { background-color: transparent !important; }
+  [class*="drop-shadow-["] { filter: none !important; }
+
+  /* Blobs de blur decorativos não ajudam num PDF */
+  [class*="blur-["] { display: none !important; }
+
+  /* Accordion do Escopo: força as descrições abertas mesmo com estilo inline do framer */
+  .print-expand { height: auto !important; opacity: 1 !important; overflow: visible !important; }
+  .print-open { display: block !important; }
+
+  /* Neutraliza animações do framer-motion: tudo estático e visível no PDF */
+  [style*="opacity"] { opacity: 1 !important; }
+  [style*="transform"] { transform: none !important; }
 }

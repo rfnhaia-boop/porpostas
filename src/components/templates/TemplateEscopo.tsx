@@ -56,21 +56,27 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
                 <div className="text-xl font-medium print:text-black">{formatCurrency(service.price)}</div>
               </div>
 
-              <AnimatePresence>
-                {/* Print Force Expand via CSS + normal react logic for screen */}
-                {(expandedId === service.id || true) && service.description && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: expandedId === service.id ? 1 : 0, height: expandedId === service.id ? 'auto' : 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden print-expand"
-                  >
-                    <div className="pt-6 mt-6 border-t border-white/10 print:border-black/10 text-white/60 print:text-black/80 text-lg leading-relaxed pl-10">
-                      {service.description}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {service.description && (
+                <>
+                  {/* Tela: accordion animado */}
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: expandedId === service.id ? 1 : 0, height: expandedId === service.id ? 'auto' : 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden print:hidden"
+                    >
+                      <div className="pt-6 mt-6 border-t border-white/10 text-white/60 text-lg leading-relaxed pl-10">
+                        {service.description}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                  {/* Impressão: descrição sempre visível e estática */}
+                  <div className="hidden print:block pt-6 mt-6 border-t border-black/10 text-black/80 text-base leading-relaxed pl-10">
+                    {service.description}
+                  </div>
+                </>
+              )}
             </motion.div>
           ))}
         </div>
