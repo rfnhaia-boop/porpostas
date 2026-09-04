@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { notifyProposalEvent } from '@/lib/notify';
+import { extractToken } from '@/lib/slug';
 
 type Ctx = { params: Promise<{ token: string }> };
 
 // Público: a página /p/<token> chama isto ao abrir, para registrar a visualização.
 export async function POST(_request: NextRequest, { params }: Ctx) {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = extractToken(rawToken);
 
   const proposal = await prisma.proposal.findUnique({
     where: { publicToken: token },

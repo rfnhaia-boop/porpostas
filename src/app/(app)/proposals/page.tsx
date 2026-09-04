@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Proposal } from '@/lib/api';
 import { formatBRL } from '@/lib/money';
 import { usePlatformStore } from '@/store/usePlatformStore';
+import { buildPublicPath } from '@/lib/slug';
 import { motion } from 'framer-motion';
 import { Check, ClipboardList, Eye, EyeOff, FileText, Link2, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -33,8 +34,11 @@ function timeAgo(iso: string) {
 
 function ResendRow({ proposal }: { proposal: Proposal }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== 'undefined' ? `${window.location.origin}/p/${proposal.publicToken}` : '';
   const client = proposal.client;
+  const url =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${buildPublicPath(proposal.publicToken, client?.name)}`
+      : '';
 
   const copy = async () => {
     await navigator.clipboard.writeText(url);

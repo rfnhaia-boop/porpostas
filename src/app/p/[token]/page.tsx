@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getPublicProposal } from '@/lib/publicProposal';
+import { extractToken } from '@/lib/slug';
 import { unlockCookieName, unlockCookieValue } from '@/lib/proposalUnlock';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { TemplateRenderer } from '@/components/templates/TemplateRenderer';
@@ -12,7 +13,8 @@ import { ViewPing } from './ViewPing';
 type Props = { params: Promise<{ token: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = extractToken(rawToken);
   const proposal = await getPublicProposal(token);
   const base: Metadata = { robots: { index: false, follow: false } };
   if (!proposal) return { ...base, title: 'Proposta' };
@@ -28,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicProposalPage({ params }: Props) {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = extractToken(rawToken);
   const proposal = await getPublicProposal(token);
   if (!proposal) notFound();
 

@@ -8,6 +8,7 @@ import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Prin
 import { TemplateRenderer, TEMPLATE_OPTIONS as TEMPLATES } from '@/components/templates/TemplateRenderer';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { formatBRL } from '@/lib/money';
+import { buildPublicPath } from '@/lib/slug';
 import { api } from '@/lib/api';
 
 export default function PreviewPage() {
@@ -149,7 +150,7 @@ export default function PreviewPage() {
 
   const client = clients.find((item) => item.id === quoteDraft.clientId);
   const getShareUrl = () =>
-    saved ? `${window.location.origin}/p/${saved.publicToken}` : '';
+    saved ? `${window.location.origin}${buildPublicPath(saved.publicToken, client?.name)}` : '';
   const copyShareUrl = async () => {
     await navigator.clipboard.writeText(getShareUrl());
     setCopied(true);
@@ -177,7 +178,7 @@ export default function PreviewPage() {
   const previewClientView = async () => {
     try {
       const p = await persistProposal('draft');
-      window.open(`${window.location.origin}/p/${p.publicToken}`, '_blank', 'noopener,noreferrer');
+      window.open(`${window.location.origin}${buildPublicPath(p.publicToken, client?.name)}`, '_blank', 'noopener,noreferrer');
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao abrir a visualização.');
     }

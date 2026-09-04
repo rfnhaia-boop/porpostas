@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { notifyProposalEvent } from '@/lib/notify';
+import { extractToken } from '@/lib/slug';
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -10,7 +11,8 @@ type Decision = (typeof DECISIONS)[number];
 // Público: o cliente responde à proposta pelo link. Sem sessão — o token é a credencial.
 // O cliente pode mudar a resposta quantas vezes quiser; o dono sempre vê a atual.
 export async function POST(request: NextRequest, { params }: Ctx) {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = extractToken(rawToken);
   const body = await request.json().catch(() => null);
 
   const decision = body?.decision as Decision;
