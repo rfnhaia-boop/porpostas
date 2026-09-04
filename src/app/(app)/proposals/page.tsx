@@ -7,8 +7,9 @@ import { api, type Proposal } from '@/lib/api';
 import { formatBRL } from '@/lib/money';
 import { usePlatformStore } from '@/store/usePlatformStore';
 import { motion } from 'framer-motion';
-import { Check, Eye, EyeOff, FileText, Link2, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
+import { Check, ClipboardList, Eye, EyeOff, FileText, Link2, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import ExecutionModal from '@/components/ExecutionModal';
 
 const STATUS_LABEL: Record<Proposal['status'], { text: string; className: string }> = {
   draft: { text: 'Rascunho', className: 'text-[var(--text-muted)]' },
@@ -16,7 +17,11 @@ const STATUS_LABEL: Record<Proposal['status'], { text: string; className: string
   approved: { text: 'Aprovada', className: 'text-green-500' },
   declined: { text: 'Recusada', className: 'text-red-500' },
   changes_requested: { text: 'Alteração pedida', className: 'text-blue-500' },
+  in_progress: { text: 'Em execução', className: 'text-blue-400' },
+  delivered: { text: 'Entregue', className: 'text-green-500' },
 };
+
+const EXECUTABLE: Proposal['status'][] = ['approved', 'in_progress', 'delivered'];
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -72,6 +77,7 @@ export default function ProposalsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const loadProposalIntoDraft = usePlatformStore((s) => s.loadProposalIntoDraft);
+  const [executionProposalId, setExecutionProposalId] = useState<string | null>(null);
 
   const { data: proposals = [], isLoading } = useQuery({
     queryKey: ['proposals'],
@@ -152,6 +158,15 @@ export default function ProposalsPage() {
                     <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]">{date}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {EXECUTABLE.includes(proposal.status) && (
+                      <button
+                        onClick={() => setExecutionProposalId(proposal.id)}
+                        className="text-[var(--text-muted)] hover:text-[#FF6A00] transition-colors"
+                        title="Execução, contrato e cobrança"
+                      >
+                        <ClipboardList size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => editProposal(proposal)}
                       className="text-[var(--text-muted)] hover:text-[#FF6A00] transition-colors"
@@ -213,6 +228,13 @@ export default function ProposalsPage() {
           })}
         </div>
       )}
+
+      {executionProposalId &&
+        (() => {
+          const p = proposals.find((x) => x.id === executionProposalId);
+          if (!p) return null;
+          return <ExecutionModal proposal={p} onClose={() => setExecutionProposalId(null)} />;
+        })()}
     </div>
   );
 }

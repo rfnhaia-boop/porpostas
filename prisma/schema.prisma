@@ -23,6 +23,7 @@ model Company {
   services      Service[]
   proposals     Proposal[]
   notifications Notification[]
+  payments      Payment[]
 }
 
 /// Notificação in-app para o dono (cliente visualizou / respondeu uma proposta).
@@ -155,20 +156,54 @@ model Proposal {
   paymentTerms   String    @default("")
   notes          String    @default("")
   total          Int       @default(0) // centavos
-  status         String    @default("draft") // draft | sent | approved | declined
+  status         String    @default("draft") // draft|sent|approved|declined|changes_requested|in_progress|delivered
   publicToken    String    @unique @default(nanoid(12)) // link público: /p/<token>
   accessPhrase   String?   // palavra-chave opcional; se setada, o link exige ela pra abrir
   responseNote   String?   // observação opcional que o cliente deixa ao responder
   viewedAt       DateTime? // 1ª vez que o cliente abriu o link
   viewCount      Int       @default(0)
+  startedAt      DateTime? // marcado "em execução"
+  deliveredAt    DateTime? // marcado "entregue"
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   respondedAt    DateTime?
 
-  items ProposalItem[]
+  // Contrato assinado anexado (1 por proposta)
+  contractFileName   String?
+  contractMimeType   String?
+  contractSize       Int?
+  contractData       Bytes?
+  contractUploadedAt DateTime?
+
+  items    ProposalItem[]
+  payments Payment[]
 
   @@index([companyId])
   @@index([clientId])
+}
+
+/// Uma parcela de cobrança (à vista, parcelada ou recorrente/mensal) de uma proposta.
+model Payment {
+  id         String    @id @default(cuid())
+  companyId  String
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  proposalId String
+  proposal   Proposal  @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  label      String // "Mês 2 · Parcela 1/3"
+  amount     Int // centavos
+  dueDate    DateTime?
+  status     String    @default("pending") // pending | paid
+  paidAt     DateTime?
+
+  receiptFileName String?
+  receiptMimeType String?
+  receiptSize     Int?
+  receiptData     Bytes?
+
+  createdAt DateTime @default(now())
+
+  @@index([proposalId])
+  @@index([companyId])
 }
 
 /// Snapshot do item de catálogo no momento em que a proposta foi salva.

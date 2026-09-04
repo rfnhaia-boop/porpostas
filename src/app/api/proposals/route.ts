@@ -9,7 +9,8 @@ export async function GET() {
   const proposals = await prisma.proposal.findMany({
     where: { companyId },
     orderBy: { createdAt: 'desc' },
-    include: { items: true, client: true },
+    omit: { contractData: true },
+    include: { items: true, client: true, payments: { omit: { receiptData: true } } },
   });
   return Response.json(proposals);
 }
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
       status,
       items: { create: items },
     },
-    include: { items: true, client: true },
+    omit: { contractData: true },
+    include: { items: true, client: true, payments: { omit: { receiptData: true } } },
   });
   return Response.json(proposal, { status: 201 });
 }

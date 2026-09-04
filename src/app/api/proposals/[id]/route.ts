@@ -11,13 +11,22 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
   if (!companyId) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
   const proposal = await prisma.proposal.findFirst({
     where: { id, companyId },
-    include: { items: true, client: true },
+    omit: { contractData: true },
+    include: { items: true, client: true, payments: { omit: { receiptData: true } } },
   });
   if (!proposal) return Response.json({ error: 'Proposta não encontrada.' }, { status: 404 });
   return Response.json(proposal);
 }
 
-const STATUSES = ['draft', 'sent', 'approved', 'declined', 'changes_requested'] as const;
+const STATUSES = [
+  'draft',
+  'sent',
+  'approved',
+  'declined',
+  'changes_requested',
+  'in_progress',
+  'delivered',
+] as const;
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   const { id } = await params;
@@ -38,6 +47,8 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (typeof body.status === 'string' && (STATUSES as readonly string[]).includes(body.status)) {
     data.status = body.status;
     if (body.status === 'approved' || body.status === 'declined') data.respondedAt = new Date();
+    if (body.status === 'in_progress') data.startedAt = new Date();
+    if (body.status === 'delivered') data.deliveredAt = new Date();
   }
 
   // Edição da proposta: substitui todos os itens e recalcula o total.
@@ -56,7 +67,8 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     return tx.proposal.update({
       where: { id },
       data,
-      include: { items: true, client: true },
+      omit: { contractData: true },
+      include: { items: true, client: true, payments: { omit: { receiptData: true } } },
     });
   });
   return Response.json(updated);

@@ -55,7 +55,31 @@ export interface ItemInput {
   unitPrice: number;
 }
 
-export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'changes_requested';
+export type ProposalStatus =
+  | 'draft'
+  | 'sent'
+  | 'approved'
+  | 'declined'
+  | 'changes_requested'
+  | 'in_progress'
+  | 'delivered';
+
+export type PaymentStatus = 'pending' | 'paid';
+
+export interface Payment {
+  id: string;
+  companyId: string;
+  proposalId: string;
+  label: string;
+  amount: number; // centavos
+  dueDate: string | null;
+  status: PaymentStatus;
+  paidAt: string | null;
+  receiptFileName: string | null;
+  receiptMimeType: string | null;
+  receiptSize: number | null;
+  createdAt: string;
+}
 
 export interface Proposal {
   id: string;
@@ -77,7 +101,14 @@ export interface Proposal {
   viewCount: number;
   createdAt: string;
   respondedAt: string | null;
+  startedAt: string | null;
+  deliveredAt: string | null;
+  contractFileName: string | null;
+  contractMimeType: string | null;
+  contractSize: number | null;
+  contractUploadedAt: string | null;
   items: ProposalItem[];
+  payments: Payment[];
 }
 
 export type NotificationType = 'proposal_viewed' | 'proposal_approved' | 'proposal_declined' | 'proposal_changes_requested';
@@ -169,6 +200,57 @@ export const api = {
       >,
     ) => request<Proposal>(`/api/proposals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/api/proposals/${id}`, { method: 'DELETE' }),
+  },
+  contracts: {
+    upload: async (proposalId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`/api/proposals/${proposalId}/contract`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Erro ${res.status}`);
+      }
+      return res.json() as Promise<{ ok: true; fileName: string; size: number }>;
+    },
+    remove: (proposalId: string) => request<void>(`/api/proposals/${proposalId}/contract`, { method: 'DELETE' }),
+    fileUrl: (proposalId: string) => `/api/proposals/${proposalId}/contract`,
+  },
+  payments: {
+    generatePlan: (
+      proposalId: string,
+      data: {
+        recurrence: 'once' | 'monthly';
+        occurrences?: number;
+        installmentsPerCycle: number;
+        cycleAmount: number;
+        firstDueDate?: string | null;
+      },
+    ) => request<Payment[]>(`/api/proposals/${proposalId}/payments`, { method: 'POST', body: JSON.stringify(data) }),
+    clearPlan: (proposalId: string) => request<void>(`/api/proposals/${proposalId}/payments`, { method: 'DELETE' }),
+    setStatus: (proposalId: string, paymentId: string, status: PaymentStatus) =>
+      request<Payment>(`/api/proposals/${proposalId}/payments/${paymentId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    remove: (proposalId: string, paymentId: string) =>
+      request<void>(`/api/proposals/${proposalId}/payments/${paymentId}`, { method: 'DELETE' }),
+    uploadReceipt: async (proposalId: string, paymentId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`/api/proposals/${proposalId}/payments/${paymentId}/receipt`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Erro ${res.status}`);
+      }
+      return res.json() as Promise<{ ok: true; status: PaymentStatus; paidAt: string | null }>;
+    },
+    removeReceipt: (proposalId: string, paymentId: string) =>
+      request<void>(`/api/proposals/${proposalId}/payments/${paymentId}/receipt`, { method: 'DELETE' }),
+    receiptUrl: (proposalId: string, paymentId: string) =>
+      `/api/proposals/${proposalId}/payments/${paymentId}/receipt`,
   },
   notifications: {
     list: () => request<{ items: AppNotification[]; unread: number }>('/api/notifications'),
