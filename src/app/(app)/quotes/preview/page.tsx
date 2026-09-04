@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X } from 'lucide-react';
 import { TemplateRenderer, TEMPLATE_OPTIONS as TEMPLATES } from '@/components/templates/TemplateRenderer';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
+import { formatBRL } from '@/lib/money';
 import { api } from '@/lib/api';
 
 export default function PreviewPage() {
   const router = useRouter();
   const { quoteDraft, updateQuoteDraft, clients, companyInfo } = usePlatformStore();
   const activeTemplate = quoteDraft.template || 'cyber';
+  const [installments, setInstallments] = useState(3);
 
   const [isEditingSettings, setIsEditingSettings] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -45,6 +47,13 @@ export default function PreviewPage() {
     notes: quoteDraft.notes,
     items: quoteDraft.services,
     total: quoteDraft.services.reduce((sum, s) => sum + s.price, 0),
+  };
+
+  // Ex.: total R$ 3.000 em 3x -> "3x mensais de R$ 1.000,00"
+  const installmentText = (n: number) => {
+    const safeN = Math.max(2, Math.min(48, Math.round(n) || 2));
+    const per = Math.round(quoteView.total / safeN);
+    return `${safeN}x mensais de ${formatBRL(per)}`;
   };
 
   const buildPayload = () => ({
@@ -193,14 +202,42 @@ export default function PreviewPage() {
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
                   {['À vista', '50% na aprovação e 50% na entrega', '30/60 dias'].map((value) => (
-                    <button 
-                      key={value} 
-                      onClick={() => updateQuoteDraft({ paymentTerms: value })} 
+                    <button
+                      key={value}
+                      onClick={() => updateQuoteDraft({ paymentTerms: value })}
                       className="rounded-full border border-[var(--border-color)] px-3 py-1 text-[10px] text-[var(--text-muted)] hover:border-[#FF6A00] hover:text-[#FF6A00]"
                     >
                       {value}
                     </button>
                   ))}
+                </div>
+
+                {/* Parcelamento — calcula do total */}
+                <div className="mt-4 rounded-xl border border-[var(--border-color)] p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Parcelar em</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={48}
+                      value={installments}
+                      onChange={(e) => setInstallments(Number(e.target.value))}
+                      className="w-16 bg-transparent border-b-2 border-[var(--border-color)] text-lg font-bold text-[var(--foreground)] text-center focus:outline-none focus:border-[#FF6A00]"
+                    />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">x mensais</span>
+                    <button
+                      onClick={() => updateQuoteDraft({ paymentTerms: installmentText(installments) })}
+                      disabled={quoteView.total <= 0}
+                      className="ml-auto rounded-full bg-[#FF6A00] px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#0A0A0A] disabled:opacity-40"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                  {quoteView.total > 0 && (
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      Resultado: <span className="font-bold text-[#FF6A00]">{installmentText(installments)}</span>
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
