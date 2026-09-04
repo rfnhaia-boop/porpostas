@@ -1,15 +1,13 @@
 'use client';
 
 import React from 'react';
-import { usePlatformStore } from '@/store/usePlatformStore';
 import { formatBRL } from '@/lib/money';
+import { type QuoteView } from '@/lib/quoteView';
 
-export const TemplateMinimalista = () => {
-  const { quoteDraft, companyInfo, clients } = usePlatformStore();
-  const services = quoteDraft.services;
-  const client = clients.find(c => c.id === quoteDraft.clientId);
-  
-  const getTotal = () => services.reduce((acc, s) => acc + s.price, 0);
+export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
+  const services = q.items;
+  const client = q.client;
+  const company = q.company;
 
   const formatCurrency = formatBRL;
 
@@ -18,24 +16,24 @@ export const TemplateMinimalista = () => {
   return (
     <div className="min-h-full w-full bg-[#d9d6cf] print:bg-white text-[#151515] flex flex-col p-6 md:p-16 print:p-0 items-center">
       <div className="max-w-[21cm] w-full flex-1 flex flex-col relative bg-[#faf9f5] px-8 py-12 shadow-[0_35px_90px_rgba(0,0,0,.2)] print:p-0 print:shadow-none md:px-16">
-        
+
         {/* Architectural Header Grid */}
         <div className="grid grid-cols-4 border-t-4 border-b border-black/20 mb-16">
           <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6 flex flex-col justify-center">
-            <h1 className="font-serif text-4xl font-black tracking-tighter leading-none">{companyInfo.name}</h1>
+            <h1 className="font-serif text-4xl font-black tracking-tighter leading-none">{company.name}</h1>
           </div>
           <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6">
             <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Documento REF</p>
-            <p className="font-bold text-lg">{quoteDraft.proposalNumber}</p>
+            <p className="font-bold text-lg">{q.proposalNumber}</p>
           </div>
           <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6">
             <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Data / Validade</p>
             <p className="font-bold text-sm">{currentDate}</p>
-            <p className="text-xs text-black/65">{quoteDraft.validityDays}</p>
+            <p className="text-xs text-black/65">{q.validityDays}</p>
           </div>
           <div className="col-span-2 md:col-span-1 p-6">
             <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Prazo Estimado</p>
-            <p className="font-bold text-sm">{quoteDraft.timeline}</p>
+            <p className="font-bold text-sm">{q.timeline}</p>
           </div>
         </div>
 
@@ -58,7 +56,7 @@ export const TemplateMinimalista = () => {
             <div className="flex-1">Especificação</div>
             <div className="w-48 text-right">Valor Estimado</div>
           </div>
-          
+
           <div className="space-y-0">
             {services.map((service, idx) => (
               <div key={service.id} className="flex items-start border-b border-black/10 py-8 group">
@@ -80,7 +78,7 @@ export const TemplateMinimalista = () => {
         {/* Notes */}
         <div className="mb-16 max-w-2xl">
           <p className="text-[10px] uppercase tracking-widest text-black/60 mb-4">Condições comerciais</p>
-          <p className="text-sm font-light leading-relaxed text-black/70 whitespace-pre-wrap">{quoteDraft.notes}</p>
+          <p className="text-sm font-light leading-relaxed text-black/70 whitespace-pre-wrap">{q.notes}</p>
         </div>
 
         {/* Massive Total Line */}
@@ -90,21 +88,21 @@ export const TemplateMinimalista = () => {
             <p className="text-sm font-light text-black/60 max-w-xs">Valor referente aos serviços e entregas descritos neste documento.</p>
           </div>
             <div className="font-serif text-7xl md:text-8xl font-black tracking-tighter">
-              {formatCurrency(getTotal())}
+              {formatCurrency(q.total)}
             </div>
           </div>
 
         <div className="mb-16 grid gap-px overflow-hidden border border-black/15 bg-black/15 md:grid-cols-3">
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Validade</p><strong className="mt-2 block text-sm">{quoteDraft.validityDays}</strong></div>
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Prazo de execução</p><strong className="mt-2 block text-sm">{quoteDraft.timeline}</strong></div>
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Pagamento</p><strong className="mt-2 block text-sm">{quoteDraft.paymentTerms || '50% na aprovação e 50% na entrega'}</strong></div>
+          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Validade</p><strong className="mt-2 block text-sm">{q.validityDays}</strong></div>
+          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Prazo de execução</p><strong className="mt-2 block text-sm">{q.timeline}</strong></div>
+          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Pagamento</p><strong className="mt-2 block text-sm">{q.paymentTerms || '50% na aprovação e 50% na entrega'}</strong></div>
         </div>
 
         {/* Swiss Footer */}
         <div className="grid grid-cols-2 text-[10px] uppercase tracking-widest text-black/60 border-t border-black/20 pt-8">
           <div>
-            <p className="font-bold text-black mb-1">{companyInfo.name} — {companyInfo.cnpj}</p>
-            <p>{companyInfo.email} // {companyInfo.phone}</p>
+            <p className="font-bold text-black mb-1">{company.name} — {company.cnpj}</p>
+            <p>{company.email} // {company.phone}</p>
           </div>
           <div className="text-right">
             <p>Assinatura Eletrônica / De Acordo</p>

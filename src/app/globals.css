@@ -11,7 +11,7 @@
 }
 
 :root {
-  --background: #FFFFFF;
+  --background: #EEF0F4;
   --foreground: #0A0A0A;
   --panel-bg: #F5F5F5;
   --border-color: rgba(0, 0, 0, 0.1);
@@ -36,6 +36,26 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Fundo com leves halos de cor pro liquid-glass ter o que "gelar" atrás. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60vw 60vw at 12% -10%, rgba(255, 122, 26, 0.10), transparent 60%),
+    radial-gradient(55vw 55vw at 100% 0%, rgba(56, 132, 255, 0.08), transparent 55%),
+    radial-gradient(70vw 70vw at 50% 120%, rgba(255, 106, 0, 0.06), transparent 60%);
+}
+
+.dark body::before {
+  background:
+    radial-gradient(60vw 60vw at 12% -10%, rgba(255, 122, 26, 0.14), transparent 60%),
+    radial-gradient(55vw 55vw at 100% 0%, rgba(56, 132, 255, 0.10), transparent 55%),
+    radial-gradient(70vw 70vw at 50% 120%, rgba(255, 106, 0, 0.08), transparent 60%);
+}
+
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
 
@@ -45,12 +65,19 @@ html.dark { color-scheme: dark; }
 }
 
 @layer utilities {
+  /* Liquid glass — modo claro: painel de vidro fosco translúcido com profundidade. */
   .liquid-glass {
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.5) 100%);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.04),
+      0 10px 24px -6px rgba(16, 24, 40, 0.12),
+      0 26px 50px -12px rgba(16, 24, 40, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
-  
+
   .dark .liquid-glass {
     background: linear-gradient(135deg, rgba(26,26,26,0.8) 0%, rgba(10,10,10,0.9) 100%);
     backdrop-filter: blur(20px);

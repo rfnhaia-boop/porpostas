@@ -5,22 +5,9 @@ import { usePlatformStore } from '@/store/usePlatformStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X } from 'lucide-react';
-import { TemplateCyber } from '@/components/templates/TemplateCyber';
-import { TemplateMinimalista } from '@/components/templates/TemplateMinimalista';
-import { TemplateExecutivo } from '@/components/templates/TemplateExecutivo';
-import { TemplateEscopo } from '@/components/templates/TemplateEscopo';
-import { TemplateEssencial } from '@/components/templates/TemplateEssencial';
-import { TemplateDetalhado } from '@/components/templates/TemplateDetalhado';
+import { TemplateRenderer, TEMPLATE_OPTIONS as TEMPLATES } from '@/components/templates/TemplateRenderer';
+import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { api } from '@/lib/api';
-
-const TEMPLATES = [
-  { id: 'cyber', name: 'Premium Digital' },
-  { id: 'minimalista', name: 'Editorial' },
-  { id: 'executivo', name: 'Corporativo' },
-  { id: 'escopo', name: 'Escopo de Projeto' },
-  { id: 'essencial', name: 'Orçamento Essencial' },
-  { id: 'detalhado', name: 'Orçamento Detalhado' },
-] as const;
 
 export default function PreviewPage() {
   const router = useRouter();
@@ -38,7 +25,27 @@ export default function PreviewPage() {
       ? { id: quoteDraft.proposalId, publicToken: quoteDraft.publicToken }
       : null,
   );
-  const paymentTerms = quoteDraft.paymentTerms || '50% na aprovação e 50% na entrega';
+  const paymentTerms = quoteDraft.paymentTerms || DEFAULT_PAYMENT_TERMS;
+
+  const draftClient = clients.find((c) => c.id === quoteDraft.clientId) ?? null;
+  const quoteView: QuoteView = {
+    company: companyInfo,
+    client: draftClient
+      ? {
+          name: draftClient.name,
+          company: draftClient.company,
+          document: draftClient.document,
+          email: draftClient.email,
+        }
+      : null,
+    proposalNumber: quoteDraft.proposalNumber,
+    validityDays: quoteDraft.validityDays,
+    timeline: quoteDraft.timeline,
+    paymentTerms,
+    notes: quoteDraft.notes,
+    items: quoteDraft.services,
+    total: quoteDraft.services.reduce((sum, s) => sum + s.price, 0),
+  };
 
   const buildPayload = () => ({
     clientId: quoteDraft.clientId,
@@ -298,12 +305,7 @@ export default function PreviewPage() {
             transition={{ duration: 0.5, ease: 'easeInOut' }}
             className="w-full min-h-full"
           >
-            {activeTemplate === 'cyber' && <TemplateCyber />}
-            {activeTemplate === 'minimalista' && <TemplateMinimalista />}
-            {activeTemplate === 'executivo' && <TemplateExecutivo />}
-            {activeTemplate === 'escopo' && <TemplateEscopo />}
-            {activeTemplate === 'essencial' && <TemplateEssencial />}
-            {activeTemplate === 'detalhado' && <TemplateDetalhado />}
+            <TemplateRenderer template={activeTemplate} q={quoteView} />
           </motion.div>
         </AnimatePresence>
       </div>
