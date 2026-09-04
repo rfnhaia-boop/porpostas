@@ -5,48 +5,117 @@ import { formatBRL } from '@/lib/money';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 
 const money = formatBRL;
+const PINE = '#0d5b43';
 
 export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
-  const client = q.client;
-  const company = q.company;
+  const { items, client, company } = q;
 
   return (
-    <div className="min-h-full bg-[#dbe3e0] px-5 py-14 text-[#10231d] print:bg-white print:p-0 md:px-12">
-      <article className="mx-auto min-h-[29.7cm] w-full max-w-[21cm] bg-white p-8 shadow-[0_35px_100px_rgba(14,45,35,.22)] print:min-h-0 print:shadow-none md:p-14">
-        <header className="mb-12 flex flex-col justify-between gap-8 border-b-4 border-[#0d5b43] pb-10 md:flex-row md:items-end">
-          <div><p className="mb-4 text-xs font-bold uppercase tracking-[.3em] text-[#0d5b43]">Mapa detalhado de custos</p><h1 className="text-5xl font-black uppercase leading-none tracking-[-.055em]">Orçamento<br />detalhado</h1></div>
-          <div className="text-sm md:text-right"><p className="text-xl font-black uppercase">{company.name}</p><p className="mt-2 text-[#10231d]/55">CNPJ {company.cnpj}</p><p className="text-[#10231d]/55">{company.email} · {company.phone}</p></div>
+    <div className="min-h-full bg-[#dfe6e2] px-4 py-16 text-[#0f221c] print:bg-white print:p-0 md:px-12">
+      <article className="mx-auto min-h-[29.7cm] w-full max-w-[21cm] bg-white px-10 py-14 shadow-[0_50px_120px_-30px_rgba(14,45,35,.3)] ring-1 ring-black/[.04] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-16 md:py-20">
+        {/* Cabeçalho */}
+        <header className="flex flex-col justify-between gap-8 border-b pb-12 md:flex-row md:items-end" style={{ borderColor: PINE }}>
+          <div>
+            <p className="font-grotesque text-[11px] font-semibold uppercase tracking-[.3em]" style={{ color: PINE }}>
+              Mapa detalhado de custos
+            </p>
+            <h1 className="mt-4 font-display text-[3.4rem] font-light leading-[.95] tracking-[-.02em] md:text-[4.6rem]">
+              Orçamento
+              <br />
+              detalhado
+            </h1>
+          </div>
+          <div className="font-grotesque text-sm md:text-right">
+            <p className="text-base font-semibold uppercase tracking-[.08em]">{company.name}</p>
+            <p className="mt-2 text-black/50">CNPJ {company.cnpj}</p>
+            <p className="text-black/50">{company.email} · {company.phone}</p>
+          </div>
         </header>
 
-        <section className="mb-10 grid gap-3 border border-[#10231d]/15 bg-[#f5f7f5] p-6 text-sm md:grid-cols-4">
-          <div className="md:col-span-2"><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Cliente</span><strong>{client?.name}</strong><p className="text-[#10231d]/55">{client?.company} {client?.document && `· ${client.document}`}</p></div>
-          <div><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Referência</span><strong>{q.proposalNumber}</strong></div>
-          <div><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Validade</span><strong>{q.validityDays}</strong></div>
+        {/* Meta */}
+        <section className="mt-10 grid gap-6 border border-black/10 bg-[#f4f7f5] px-6 py-6 font-grotesque text-sm md:grid-cols-4">
+          <div className="md:col-span-2">
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Cliente</span>
+            <strong className="mt-1 block">{client?.name ?? '—'}</strong>
+            <p className="text-black/50">{[client?.company, client?.document].filter(Boolean).join(' · ')}</p>
+          </div>
+          <div>
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Referência</span>
+            <strong className="mt-1 block">{q.proposalNumber}</strong>
+          </div>
+          <div>
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Validade</span>
+            <strong className="mt-1 block">{q.validityDays}</strong>
+          </div>
         </section>
 
-        <section>
-          <div className="grid grid-cols-[42px_1fr_110px] bg-[#10231d] px-4 py-3 text-[9px] font-bold uppercase tracking-[.18em] text-white md:grid-cols-[48px_1fr_90px_130px]">
-            <span>Item</span><span>Descrição técnica</span><span className="hidden text-center md:block">Qtd.</span><span className="text-right">Subtotal</span>
+        {/* Tabela */}
+        <section className="mt-12">
+          <div
+            className="grid grid-cols-[44px_1fr_130px] px-4 py-3 font-grotesque text-[10px] font-semibold uppercase tracking-[.2em] text-white md:grid-cols-[52px_1fr_80px_140px]"
+            style={{ backgroundColor: PINE }}
+          >
+            <span>Item</span>
+            <span>Descrição técnica</span>
+            <span className="hidden text-center md:block">Qtd.</span>
+            <span className="text-right">Subtotal</span>
           </div>
-          {q.items.map((service, index) => (
-            <div key={service.id} className="grid grid-cols-[42px_1fr_110px] border-x border-b border-[#10231d]/12 px-4 py-6 md:grid-cols-[48px_1fr_90px_130px]">
-              <span className="font-mono text-sm text-[#0d5b43]">{String(index + 1).padStart(2, '0')}</span>
-              <div className="pr-4"><h3 className="font-bold">{service.name}</h3><p className="mt-2 text-xs leading-5 text-[#10231d]/58">{service.description}</p></div>
-              <span className="hidden text-center text-sm text-[#10231d]/55 md:block">1 un.</span>
-              <strong className="text-right">{money(service.price)}</strong>
+          {items.map((service, index) => (
+            <div
+              key={service.id}
+              className="grid grid-cols-[44px_1fr_130px] border-x border-b border-black/10 px-4 py-7 md:grid-cols-[52px_1fr_80px_140px]"
+            >
+              <span className="font-grotesque text-sm font-semibold" style={{ color: PINE }}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div className="pr-4">
+                <h3 className="font-display text-lg font-normal leading-tight">{service.name}</h3>
+                {service.description && (
+                  <p className="mt-1.5 text-xs leading-relaxed text-black/55">{service.description}</p>
+                )}
+              </div>
+              <span className="hidden text-center font-grotesque text-sm text-black/45 md:block">1 un.</span>
+              <strong className="text-right font-grotesque tabular-nums">{money(service.price)}</strong>
             </div>
           ))}
         </section>
 
-        <section className="mt-10 grid gap-8 md:grid-cols-[1fr_280px]">
-          <div><p className="mb-3 text-[9px] font-bold uppercase tracking-[.2em] text-[#0d5b43]">Escopo, condições e premissas</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#10231d]/65">{q.notes}</p></div>
-          <div className="border-t-4 border-[#0d5b43] bg-[#edf3f0] p-6"><div className="flex justify-between text-xs text-[#10231d]/55"><span>Itens</span><span>{q.items.length}</span></div><div className="mt-5 flex items-end justify-between"><span className="text-xs font-bold uppercase tracking-[.16em]">Total geral</span><strong className="text-3xl tracking-tight text-[#0d5b43]">{money(q.total)}</strong></div></div>
+        {/* Escopo + Total */}
+        <section className="mt-12 grid gap-10 md:grid-cols-[1fr_300px]">
+          <div>
+            <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.2em]" style={{ color: PINE }}>
+              Escopo, condições e premissas
+            </p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-black/60">{q.notes}</p>
+          </div>
+          <div className="border-t-4 bg-[#eef4f1] p-6" style={{ borderColor: PINE }}>
+            <div className="flex justify-between font-grotesque text-xs text-black/50">
+              <span>Itens</span>
+              <span>{items.length}</span>
+            </div>
+            <div className="mt-5">
+              <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.16em] text-black/45">Total geral</p>
+              <strong className="mt-1 block font-display text-[2.6rem] font-light leading-none tracking-[-.02em] tabular-nums" style={{ color: PINE }}>
+                {money(q.total)}
+              </strong>
+            </div>
+          </div>
         </section>
 
-        <section className="mt-12 grid gap-6 border-t border-[#10231d]/15 pt-8 md:grid-cols-3">
-          <div><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Prazo de execução</span><strong>{q.timeline}</strong></div>
-          <div><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Aceite do cliente</span><div className="mt-7 border-b border-[#10231d]/30" /></div>
-          <div><span className="block text-[9px] font-bold uppercase tracking-[.2em] text-[#10231d]/45">Pagamento</span><strong>{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</strong></div>
+        {/* Fechamento */}
+        <section className="mt-14 grid gap-8 border-t border-black/10 pt-10 font-grotesque md:grid-cols-3">
+          <div>
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Prazo de execução</span>
+            <strong className="mt-1 block text-sm">{q.timeline}</strong>
+          </div>
+          <div>
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Pagamento</span>
+            <strong className="mt-1 block text-sm">{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</strong>
+          </div>
+          <div>
+            <span className="block text-[10px] font-semibold uppercase tracking-[.2em] text-black/40">Aceite do cliente</span>
+            <div className="mt-8 border-b border-black/30" />
+          </div>
         </section>
       </article>
     </div>

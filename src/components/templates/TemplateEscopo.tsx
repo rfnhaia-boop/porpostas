@@ -3,99 +3,116 @@
 import React, { useState } from 'react';
 import { formatBRL } from '@/lib/money';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, CalendarDays, ShieldCheck } from 'lucide-react';
+import { Plus } from 'lucide-react';
+
+const money = formatBRL;
+const EMBER = '#ff7a1a';
 
 export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
-  const services = q.items;
-  const client = q.client;
-  const company = q.company;
-
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const formatCurrency = formatBRL;
+  const { items, client, company } = q;
+  const [openId, setOpenId] = useState<string | null>(items[0]?.id ?? null);
 
   return (
-    <div className="min-h-full w-full bg-[#020202] print:bg-white print:text-black flex flex-col items-center py-32 print:py-0 px-4 relative overflow-hidden">
+    <div className="min-h-full w-full bg-[#08080a] px-4 py-24 text-white print:bg-white print:py-0 print:text-black">
+      <div className="mx-auto w-full max-w-3xl">
+        {/* Cabeçalho centrado */}
+        <header className="text-center">
+          <p className="font-grotesque text-xs font-semibold uppercase tracking-[.28em] text-white/50 print:text-black/50">
+            {company.name}
+          </p>
+          {company.cnpj && (
+            <p className="mt-1 font-grotesque text-[11px] tracking-[.16em] text-white/35 print:text-black/45">
+              CNPJ {company.cnpj}
+            </p>
+          )}
+          <p className="mt-10 font-grotesque text-[11px] font-semibold uppercase tracking-[.3em]" style={{ color: EMBER }}>
+            Proposta por escopo
+          </p>
+          <h1 className="mt-4 font-display text-[3.4rem] font-light leading-[.98] tracking-[-.03em] md:text-[5rem]">
+            Entregas
+            <br />
+            do projeto
+          </h1>
+          {client && (
+            <p className="mt-8 font-grotesque text-xs uppercase tracking-[.24em] text-white/50 print:text-black/55">
+              Preparado para {client.name}
+            </p>
+          )}
+        </header>
 
-      <div className="max-w-4xl w-full z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-24"
-        >
-          <div className="mb-8">
-            <h3 className="text-xl font-black uppercase tracking-widest text-white/80">{company.name}</h3>
-            {company.cnpj && <p className="text-white/65 text-xs tracking-widest mt-1">CNPJ: {company.cnpj}</p>}
-          </div>
-          <h2 className="text-sm tracking-widest text-brand-cyan uppercase mb-4">Proposta por escopo</h2>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">Entregas do <br />Projeto</h1>
-          {client && <p className="mt-6 text-sm uppercase tracking-[.2em] text-white/65 print:text-black/60">Preparado para {client.name}</p>}
-        </motion.div>
-
-        <div className="space-y-4 mb-24">
-          {services.map((service) => (
-            <motion.div
-              key={service.id}
-              layout
-              onClick={() => setExpandedId(expandedId === service.id ? null : service.id)}
-              className={`liquid-glass p-8 md:p-10 rounded-[2rem] cursor-pointer transition-all border ${
-                expandedId === service.id ? 'border-brand-cyan/50' : 'border-white/5 hover:border-white/20'
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    animate={{ rotate: expandedId === service.id ? 180 : 0 }}
-                    className="text-brand-cyan"
-                  >
-                    <ChevronDown size={24} />
-                  </motion.div>
-                  <h3 className="text-2xl font-bold uppercase tracking-wide">{service.name}</h3>
-                </div>
-                <div className="text-xl font-medium print:text-black">{formatCurrency(service.price)}</div>
-              </div>
-
-              {service.description && (
-                <>
-                  {/* Tela: accordion animado */}
-                  <AnimatePresence>
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: expandedId === service.id ? 1 : 0, height: expandedId === service.id ? 'auto' : 0 }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden print:hidden"
-                    >
-                      <div className="pt-6 mt-6 border-t border-white/10 text-white/60 text-lg leading-relaxed pl-10">
-                        {service.description}
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                  {/* Impressão: descrição sempre visível e estática */}
-                  <div className="hidden print:block pt-6 mt-6 border-t border-black/10 text-black/80 text-base leading-relaxed pl-10">
+        {/* Entregas */}
+        <div className="mt-20 space-y-3">
+          {items.map((service, i) => {
+            const open = openId === service.id;
+            return (
+              <div
+                key={service.id}
+                className="rounded-2xl border border-white/10 bg-white/[.03] print:rounded-none print:border-0 print:border-b print:border-black/10 print:bg-transparent"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenId(open ? null : service.id)}
+                  className="flex w-full items-center justify-between gap-6 px-7 py-7 text-left print:px-0"
+                >
+                  <div className="flex items-center gap-5">
+                    <span className="font-grotesque text-xs font-semibold" style={{ color: EMBER }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <h3 className="font-display text-[1.5rem] font-normal leading-tight">{service.name}</h3>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-grotesque text-base font-medium tabular-nums">{money(service.price)}</span>
+                    {service.description && (
+                      <Plus
+                        size={18}
+                        className={`shrink-0 text-white/40 transition-transform print:hidden ${open ? 'rotate-45' : ''}`}
+                      />
+                    )}
+                  </div>
+                </button>
+                {service.description && open && (
+                  <div className="border-t border-white/10 px-7 pb-7 pt-5 pl-[3.75rem] text-[15px] leading-relaxed text-white/55 print:hidden">
                     {service.description}
                   </div>
-                </>
-              )}
-            </motion.div>
-          ))}
+                )}
+                {service.description && (
+                  <div className="hidden border-t border-black/10 pb-6 pt-4 pl-[3.75rem] text-sm leading-relaxed text-black/70 print:block print:pl-0">
+                    {service.description}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        <motion.div layout className="liquid-glass rounded-3xl p-12 text-center border border-white/5 print:border-black/10 relative overflow-hidden">
-          <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-brand-cyan via-blue-400 to-transparent" />
-          <p className="text-white/65 print:text-black/60 uppercase tracking-widest mb-4">Investimento Necessário</p>
-          <div className="text-6xl md:text-8xl font-black mb-12 text-shadow-neon print:text-black">
-            {formatCurrency(q.total)}
+        {/* Total */}
+        <div className="mt-20 rounded-3xl border border-white/10 bg-white/[.03] p-12 text-center print:rounded-none print:border-0 print:border-t print:border-black/20 print:bg-transparent print:p-0 print:pt-12">
+          <p className="font-grotesque text-[11px] font-semibold uppercase tracking-[.26em] text-white/50 print:text-black/50">
+            Investimento necessário
+          </p>
+          <p className="mt-3 font-display text-[3.8rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[5.5rem]">
+            {money(q.total)}
+          </p>
+
+          <div className="mx-auto mt-12 grid max-w-lg gap-4 border-t border-white/10 pt-8 text-left font-grotesque text-sm print:border-black/15 sm:grid-cols-3">
+            {[
+              ['Prazo', q.timeline],
+              ['Validade', q.validityDays],
+              ['Pagamento', q.paymentTerms || DEFAULT_PAYMENT_TERMS],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <p className="text-[10px] uppercase tracking-[.2em] text-white/35 print:text-black/45">{k}</p>
+                <p className="mt-1 text-white/85 print:text-black">{v}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="grid gap-3 border-t border-white/10 print:border-black/10 pt-8 text-left md:grid-cols-3">
-            <div className="flex gap-3"><CalendarDays className="text-brand-cyan" size={20} /><div><p className="text-[10px] uppercase tracking-widest text-white/40 print:text-black/40">Prazo estimado</p><strong>{q.timeline}</strong></div></div>
-            <div className="flex gap-3"><ShieldCheck className="text-brand-cyan" size={20} /><div><p className="text-[10px] uppercase tracking-widest text-white/40 print:text-black/40">Validade da proposta</p><strong>{q.validityDays}</strong></div></div>
-            <div className="flex gap-3"><ShieldCheck className="text-brand-cyan" size={20} /><div><p className="text-[10px] uppercase tracking-widest text-white/40 print:text-black/40">Pagamento</p><strong>{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</strong></div></div>
-          </div>
-          <p className="mt-8 whitespace-pre-wrap text-left text-sm leading-6 text-white/72 print:text-black/70">{q.notes}</p>
-        </motion.div>
-
+          {q.notes && (
+            <p className="mx-auto mt-8 max-w-lg whitespace-pre-wrap text-left text-sm leading-relaxed text-white/50 print:text-black/60">
+              {q.notes}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

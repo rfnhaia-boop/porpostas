@@ -2,115 +2,102 @@
 
 import React from 'react';
 import { formatBRL } from '@/lib/money';
-import { type QuoteView } from '@/lib/quoteView';
+import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
+
+const money = formatBRL;
 
 export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
-  const services = q.items;
-  const client = q.client;
-  const company = q.company;
-
-  const formatCurrency = formatBRL;
-
-  const currentDate = new Date().toLocaleDateString('pt-BR');
+  const { items, client, company } = q;
+  const date = new Date().toLocaleDateString('pt-BR');
 
   return (
-    <div className="min-h-full w-full bg-[#d9d6cf] print:bg-white text-[#151515] flex flex-col p-6 md:p-16 print:p-0 items-center">
-      <div className="max-w-[21cm] w-full flex-1 flex flex-col relative bg-[#faf9f5] px-8 py-12 shadow-[0_35px_90px_rgba(0,0,0,.2)] print:p-0 print:shadow-none md:px-16">
-
-        {/* Architectural Header Grid */}
-        <div className="grid grid-cols-4 border-t-4 border-b border-black/20 mb-16">
-          <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6 flex flex-col justify-center">
-            <h1 className="font-serif text-4xl font-black tracking-tighter leading-none">{company.name}</h1>
+    <div className="flex min-h-full w-full flex-col items-center bg-[#e6e3da] px-4 py-16 text-[#161513] print:bg-white print:p-0">
+      <article className="flex min-h-[29.7cm] w-full max-w-[21cm] flex-1 flex-col bg-[#faf9f4] px-10 py-14 shadow-[0_50px_120px_-30px_rgba(0,0,0,.28)] ring-1 ring-black/[.04] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-20">
+        {/* Cabeçalho — grade arquitetural */}
+        <div className="grid grid-cols-2 border-y border-black/15 md:grid-cols-4">
+          <div className="border-r border-black/15 py-7 pr-6">
+            <h1 className="font-display text-[2.6rem] font-light leading-none tracking-[-.02em]">{company.name}</h1>
           </div>
-          <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6">
-            <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Documento REF</p>
-            <p className="font-bold text-lg">{q.proposalNumber}</p>
-          </div>
-          <div className="col-span-2 md:col-span-1 border-r border-black/20 p-6">
-            <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Data / Validade</p>
-            <p className="font-bold text-sm">{currentDate}</p>
-            <p className="text-xs text-black/65">{q.validityDays}</p>
-          </div>
-          <div className="col-span-2 md:col-span-1 p-6">
-            <p className="text-[10px] uppercase tracking-widest text-black/60 mb-1">Prazo Estimado</p>
-            <p className="font-bold text-sm">{q.timeline}</p>
-          </div>
+          {[
+            ['Documento', q.proposalNumber],
+            ['Data', date],
+            ['Validade', q.validityDays],
+          ].map(([k, v], i) => (
+            <div key={k} className={`py-7 pl-6 ${i < 2 ? 'border-r border-black/15' : ''} md:pl-6`}>
+              <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.22em] text-black/45">{k}</p>
+              <p className="mt-1.5 font-grotesque text-sm font-semibold">{v}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Client Target Section */}
+        {/* Cliente */}
         {client && (
-          <div className="mb-16">
-            <p className="text-[10px] uppercase tracking-widest text-black/60 mb-4">Preparado para / Cliente</p>
-            <h2 className="font-serif text-5xl font-black tracking-tighter mb-2">{client.name}</h2>
-            <div className="flex gap-8 text-sm text-black/65 uppercase tracking-widest">
-              {client.company && <span>{client.company}</span>}
-              {client.document && <span>{client.document}</span>}
-            </div>
+          <div className="mt-16">
+            <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.22em] text-black/45">Preparado para</p>
+            <h2 className="mt-3 font-display text-[3.4rem] font-light leading-[1.02] tracking-[-.02em]">{client.name}</h2>
+            {(client.company || client.document) && (
+              <p className="mt-2 font-grotesque text-xs uppercase tracking-[.2em] text-black/50">
+                {[client.company, client.document].filter(Boolean).join('   ·   ')}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Services List - Architect Style */}
-        <div className="flex-1 mb-16">
-          <div className="border-b border-black/20 pb-4 mb-8 flex uppercase tracking-widest text-[10px] font-bold text-black/60">
-            <div className="w-16">ID</div>
+        {/* Itens */}
+        <div className="mt-16 flex-1">
+          <div className="flex border-b border-black/20 pb-4 font-grotesque text-[10px] font-semibold uppercase tracking-[.22em] text-black/45">
+            <div className="w-14">Nº</div>
             <div className="flex-1">Especificação</div>
-            <div className="w-48 text-right">Valor Estimado</div>
+            <div className="w-40 text-right">Valor</div>
           </div>
-
-          <div className="space-y-0">
-            {services.map((service, idx) => (
-              <div key={service.id} className="flex items-start border-b border-black/10 py-8 group">
-                <div className="w-16 text-3xl font-light text-black/35 mt-[-4px]">
-                  {(idx + 1).toString().padStart(2, '0')}
-                </div>
-                <div className="flex-1 pr-12">
-                  <h3 className="text-2xl font-bold uppercase tracking-tight mb-3">{service.name}</h3>
-                  <p className="text-sm text-black/65 leading-relaxed font-light">{service.description}</p>
-                </div>
-                <div className="w-48 text-right text-2xl font-medium tracking-tight">
-                  {formatCurrency(service.price)}
-                </div>
+          {items.map((service, idx) => (
+            <div key={service.id} className="flex items-start border-b border-black/10 py-9">
+              <div className="w-14 font-display text-3xl font-light text-black/30">
+                {(idx + 1).toString().padStart(2, '0')}
               </div>
-            ))}
-          </div>
+              <div className="flex-1 pr-10">
+                <h3 className="font-display text-[1.6rem] font-normal leading-tight tracking-[-.01em]">{service.name}</h3>
+                {service.description && (
+                  <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-black/60">{service.description}</p>
+                )}
+              </div>
+              <div className="w-40 text-right font-grotesque text-lg font-semibold tabular-nums">
+                {money(service.price)}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Notes */}
-        <div className="mb-16 max-w-2xl">
-          <p className="text-[10px] uppercase tracking-widest text-black/60 mb-4">Condições comerciais</p>
-          <p className="text-sm font-light leading-relaxed text-black/70 whitespace-pre-wrap">{q.notes}</p>
-        </div>
-
-        {/* Massive Total Line */}
-        <div className="border-t-2 border-black pt-12 flex justify-between items-end mb-24">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-black/60 mb-2">Total Consolidado</p>
-            <p className="text-sm font-light text-black/60 max-w-xs">Valor referente aos serviços e entregas descritos neste documento.</p>
-          </div>
-            <div className="font-serif text-7xl md:text-8xl font-black tracking-tighter">
-              {formatCurrency(q.total)}
+        {/* Condições + Total */}
+        <div className="mt-16 grid gap-10 border-t-2 border-black pt-12 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="max-w-md">
+            <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.22em] text-black/45">Condições comerciais</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm font-light leading-relaxed text-black/65">{q.notes}</p>
+            <div className="mt-5 flex flex-wrap gap-x-8 gap-y-1 font-grotesque text-xs text-black/55">
+              <span>Prazo · <b className="font-semibold text-black/75">{q.timeline}</b></span>
+              <span>Pagamento · <b className="font-semibold text-black/75">{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</b></span>
             </div>
           </div>
-
-        <div className="mb-16 grid gap-px overflow-hidden border border-black/15 bg-black/15 md:grid-cols-3">
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Validade</p><strong className="mt-2 block text-sm">{q.validityDays}</strong></div>
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Prazo de execução</p><strong className="mt-2 block text-sm">{q.timeline}</strong></div>
-          <div className="bg-[#faf9f5] p-5"><p className="text-[9px] uppercase tracking-[.2em] text-black/40">Pagamento</p><strong className="mt-2 block text-sm">{q.paymentTerms || '50% na aprovação e 50% na entrega'}</strong></div>
+          <div className="md:text-right">
+            <p className="font-grotesque text-[10px] font-semibold uppercase tracking-[.22em] text-black/45">Total consolidado</p>
+            <p className="mt-1 font-display text-[3.8rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[5rem]">
+              {money(q.total)}
+            </p>
+          </div>
         </div>
 
-        {/* Swiss Footer */}
-        <div className="grid grid-cols-2 text-[10px] uppercase tracking-widest text-black/60 border-t border-black/20 pt-8">
+        {/* Rodapé */}
+        <footer className="mt-20 flex flex-wrap items-end justify-between gap-4 border-t border-black/15 pt-8 font-grotesque text-[10px] uppercase tracking-[.18em] text-black/45">
           <div>
-            <p className="font-bold text-black mb-1">{company.name} — {company.cnpj}</p>
-            <p>{company.email} // {company.phone}</p>
+            <p className="font-semibold text-black/70">{company.name} — {company.cnpj}</p>
+            <p className="mt-0.5">{company.email} · {company.phone}</p>
           </div>
           <div className="text-right">
-            <p>Assinatura Eletrônica / De Acordo</p>
-            <div className="w-48 h-[1px] bg-black/30 ml-auto mt-6"></div>
+            <p>De acordo · assinatura</p>
+            <div className="ml-auto mt-6 h-px w-48 bg-black/30" />
           </div>
-        </div>
-
-      </div>
+        </footer>
+      </article>
     </div>
   );
 };
