@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const FROM = process.env.RESEND_FROM || 'NEX Quotes <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM || 'Fechô <onboarding@resend.dev>';
 const APP_URL = (process.env.APP_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 export function appUrl(path = ''): string {

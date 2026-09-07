@@ -61,7 +61,7 @@ export async function notifyProposalEvent(opts: {
     const link = `${process.env.APP_URL ?? ''}/proposals`;
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: process.env.RESEND_FROM || 'NEX Quotes <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM || 'Fechô <onboarding@resend.dev>',
       to,
       subject: message,
       text: [

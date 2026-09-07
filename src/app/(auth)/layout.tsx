@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             NE<span className="text-[#FF6A00]">X</span>
           </h1>
           <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">
-            CRM &amp; Quotes
+            Fechô
           </p>
         </div>
         {children}

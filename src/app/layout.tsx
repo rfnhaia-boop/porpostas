@@ -13,7 +13,7 @@ const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-display', disp
 const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-grotesque', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'NEX CRM & Quotes',
+  title: 'Fechô',
   description: 'Propostas Arquiteturais de Alta Performance',
 };
 
