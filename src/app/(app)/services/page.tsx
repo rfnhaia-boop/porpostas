@@ -5,8 +5,9 @@ import { usePlatformStore, type SavedService } from '@/store/usePlatformStore';
 import { toCents, toReais, formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { RaviServiceChat } from '@/components/ravi/RaviServiceChat';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Package, Wrench, X, Check } from 'lucide-react';
+import { Plus, Trash2, Package, Wrench, X, Check, Sparkles } from 'lucide-react';
 
 type Kind = 'service' | 'product';
 
@@ -49,6 +50,7 @@ export default function ServicesPage() {
   const [editingId, setEditingId] = useState<string | null | 'new'>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Form>(emptyForm('service'));
+  const [raviOpen, setRaviOpen] = useState(false);
 
   const openNew = (kind: Kind) => {
     setForm(emptyForm(kind));
@@ -113,10 +115,16 @@ export default function ServicesPage() {
         title="Catálogo"
         description="Módulos, serviços e produtos que você reusa nas propostas"
         action={
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setRaviOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20"
+            >
+              <Sparkles size={14} /> Criar com o Ravi
+            </button>
             <button
               onClick={() => openNew('service')}
-              className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20"
+              className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
             >
               <Wrench size={14} /> Novo Serviço
             </button>
@@ -129,6 +137,8 @@ export default function ServicesPage() {
           </div>
         }
       />
+
+      {raviOpen && <RaviServiceChat onClose={() => setRaviOpen(false)} />}
 
       <AnimatePresence>
         {editingId && (
