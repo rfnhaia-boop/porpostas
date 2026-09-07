@@ -64,6 +64,28 @@ export default function SettingsPage() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<Partial<CompanyInfo>>({});
   const dirty = useRef(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoErr, setLogoErr] = useState<string | null>(null);
+
+  const uploadLogo = async (file: File) => {
+    setLogoErr(null);
+    setLogoBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/company/logo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Falha no envio.');
+      dirty.current = true;
+      setForm((prev) => ({ ...prev, logoUrl: data.logoUrl }));
+      updateCompanyInfo({ logoUrl: data.logoUrl });
+    } catch (e) {
+      setLogoErr(e instanceof Error ? e.message : 'Falha no envio.');
+    } finally {
+      setLogoBusy(false);
+    }
+  };
 
   // Sincroniza o form quando os dados do banco chegam (só antes de o usuário mexer).
   useEffect(() => {
@@ -203,8 +225,41 @@ export default function SettingsPage() {
                   className="text-lg md:text-xl text-white border-white/20 placeholder:text-white/20"
                 />
                 <p className="mt-3 text-[11px] font-semibold text-white/40 leading-relaxed max-w-lg">
-                  Link direto de uma imagem (PNG ou JPG). É a sua marca que aparece no topo dos e-mails automáticos e na área do cliente — não a da NEX. Sem logo, entra o nome da empresa.
+                  É a sua marca que aparece no topo dos e-mails automáticos e na área do cliente — não a da NEX. Sem logo, entra o nome da empresa.
                 </p>
+
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadLogo(f);
+                    e.target.value = '';
+                  }}
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoBusy}
+                    className="rounded-full border border-white/20 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white/70 transition hover:text-white disabled:opacity-50"
+                  >
+                    {logoBusy ? 'Enviando…' : 'Enviar imagem (PNG/JPG, até 1 MB)'}
+                  </button>
+                  {form.logoUrl.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange('logoUrl', '')}
+                      className="text-[10px] font-black uppercase tracking-widest text-white/40 transition hover:text-white"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+                {logoErr && <p className="mt-2 text-[11px] font-bold text-red-400">{logoErr}</p>}
+
                 {form.logoUrl.trim() && (
                   <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

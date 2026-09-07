@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploads de usuário (logos) — persistem no servidor, fora do git
+/public/uploads/

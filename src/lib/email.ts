@@ -120,7 +120,9 @@ export function facts(rows: [string, string][]): string {
 
 function shell(inner: string, opts: ShellOpts = {}): string {
   const brand = (opts.brand || '').trim();
-  const logo = (opts.logoUrl || '').trim();
+  const logoRaw = (opts.logoUrl || '').trim();
+  // Logo salva como caminho relativo (/uploads/…) vira URL absoluta pro e-mail.
+  const logo = logoRaw.startsWith('/') ? appUrl(logoRaw) : logoRaw;
   const pre = (opts.preheader || '').trim();
 
   // Cabeçalho = a marca de quem usa a NEX: logo se tiver, senão o nome; NEX só como assinatura no rodapé.
