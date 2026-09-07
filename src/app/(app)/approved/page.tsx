@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, type Proposal } from '@/lib/api';
 import { formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
@@ -34,12 +35,13 @@ export default function ApprovedPage() {
       {isLoading ? (
         <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
       ) : approved.length === 0 ? (
-        <div className="liquid-glass rounded-3xl p-16 text-center">
-          <CheckCircle2 size={48} className="mx-auto mb-6 text-[var(--border-color)]" />
-          <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm">
-            Nenhuma proposta aprovada ainda.
-          </p>
-        </div>
+        <EmptyState
+          icon={CheckCircle2}
+          title="Nenhum projeto aprovado ainda"
+          subtitle="Quando um cliente aprovar uma proposta, ela aparece aqui com andamento, entregas e cobrança."
+          actionLabel="Criar uma proposta"
+          href="/quotes/new?fresh=1"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {approved.map((p, i) => {

@@ -6,6 +6,7 @@ import { formatBRL, toCents, toReais } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InputExpansivo } from '@/components/ui/InputExpansivo';
 import { NeonButton } from '@/components/ui/NeonButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Package, Wrench } from 'lucide-react';
 
@@ -279,7 +280,13 @@ export default function ServicesPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {savedServices.length === 0 && !editingId && (
-            <p className="text-sm uppercase tracking-widest text-[var(--text-muted)]">Catálogo vazio.</p>
+            <EmptyState
+              icon={Wrench}
+              title="Catálogo vazio"
+              subtitle="Cadastre os serviços e produtos que você reusa nas propostas."
+              actionLabel="Criar primeiro serviço"
+              onAction={() => openNew('service')}
+            />
           )}
           {savedServices.map((s) => (
             <motion.div

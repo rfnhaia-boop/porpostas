@@ -6,6 +6,7 @@ import { usePlatformStore } from '@/store/usePlatformStore';
 import { api } from '@/lib/api';
 import { formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { MiniBarChart } from '@/components/charts/MiniBarChart';
 import { StatusDonut } from '@/components/charts/StatusDonut';
 import { HBarList } from '@/components/charts/HBarList';
@@ -120,6 +121,8 @@ export default function Dashboard() {
         title="Dashboard"
         description="Visão Geral da Operação"
       />
+
+      <OnboardingChecklist />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 mb-8">
         {stats.map((stat, i) => {

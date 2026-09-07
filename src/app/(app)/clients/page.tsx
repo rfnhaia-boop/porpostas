@@ -5,8 +5,9 @@ import { usePlatformStore, Client } from '@/store/usePlatformStore';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InputExpansivo } from '@/components/ui/InputExpansivo';
 import { NeonButton } from '@/components/ui/NeonButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { motion } from 'framer-motion';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Users } from 'lucide-react';
 
 export default function ClientsPage() {
   const { clients, addClient, removeClient, hydrated } = usePlatformStore();
@@ -66,11 +67,16 @@ export default function ClientsPage() {
 
       {!hydrated ? (
         <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm animate-pulse">Carregando...</p>
+      ) : clients.length === 0 && !isAdding ? (
+        <EmptyState
+          icon={Users}
+          title="Nenhum cliente ainda"
+          subtitle="Cadastre quem vai receber as suas propostas."
+          actionLabel="Adicionar primeiro cliente"
+          onAction={() => setIsAdding(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clients.length === 0 && !isAdding && (
-            <p className="text-[var(--text-muted)] uppercase tracking-widest text-sm">Nenhum cliente cadastrado.</p>
-          )}
           {clients.map(client => (
             <motion.div
               key={client.id}
