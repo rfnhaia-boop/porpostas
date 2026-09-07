@@ -18,14 +18,14 @@ export default function SignupPage() {
     e.preventDefault();
     if (loading) return;
     if (password.length < 8) {
-      setError('A senha precisa de pelo menos 8 caracteres.');
+      setError('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
     setLoading(true);
     setError(null);
-    const { error } = await signUp.email({ name, email, password });
+    const { error } = await signUp.email({ email, password, name });
     if (error) {
-      setError(error.message || 'Não foi possível criar a conta.');
+      setError(error.message || 'Ocorreu um erro ao criar a conta.');
       setLoading(false);
       return;
     }
@@ -34,66 +34,74 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="liquid-glass rounded-[2rem] p-10">
-      <h2 className="text-2xl font-black uppercase tracking-tight text-[var(--foreground)] mb-1">Criar conta</h2>
-      <p className="text-sm text-[var(--text-muted)] mb-8">Sua empresa é criada junto com o cadastro.</p>
+    <div className="w-full">
+      <h2 className="font-display text-3xl font-light tracking-tight text-white mb-2">Criar Conta</h2>
+      <p className="text-sm font-medium text-white/50 mb-10">Configure o ambiente da sua empresa.</p>
 
-      <GoogleButton label="Criar conta com Google" />
+      <GoogleButton label="Cadastrar com Google" />
 
-      <div className="flex items-center gap-4 my-6">
-        <div className="h-px flex-1 bg-[var(--border-color)]" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">ou</span>
-        <div className="h-px flex-1 bg-[var(--border-color)]" />
+      <div className="flex items-center gap-4 my-8">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-[9px] font-black uppercase tracking-[.4em] text-white/30">ou</span>
+        <div className="h-px flex-1 bg-white/10" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="text-[var(--text-muted)] text-[10px] font-bold tracking-widest uppercase mb-2 block">Seu nome</label>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <label className="flex flex-col">
+          <span className="text-[9px] font-black uppercase tracking-[.3em] text-white/50">Nome Completo</span>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-lg text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+            className="mt-2 w-full bg-transparent border-0 border-b-2 border-white/10 px-0 py-2 text-xl font-light text-white placeholder:text-white/20 focus:border-[#FF6A00] focus:ring-0 transition-all "
           />
-        </div>
-        <div>
-          <label className="text-[var(--text-muted)] text-[10px] font-bold tracking-widest uppercase mb-2 block">E-mail</label>
+        </label>
+        
+        <label className="flex flex-col">
+          <span className="text-[9px] font-black uppercase tracking-[.3em] text-white/50">E-mail Corporativo</span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-lg text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+            className="mt-2 w-full bg-transparent border-0 border-b-2 border-white/10 px-0 py-2 text-xl font-light text-white placeholder:text-white/20 focus:border-[#FF6A00] focus:ring-0 transition-all "
           />
-        </div>
-        <div>
-          <label className="text-[var(--text-muted)] text-[10px] font-bold tracking-widest uppercase mb-2 block">Senha</label>
+        </label>
+        
+        <label className="flex flex-col">
+          <span className="text-[9px] font-black uppercase tracking-[.3em] text-white/50">Criar Senha</span>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-lg text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+            className="mt-2 w-full bg-transparent border-0 border-b-2 border-white/10 px-0 py-2 text-xl font-light text-white placeholder:text-white/20 focus:border-[#FF6A00] focus:ring-0 transition-all "
           />
-          <p className="mt-2 text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Mínimo 8 caracteres</p>
-        </div>
+        </label>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#FF6A00] text-[#0A0A0A] p-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all disabled:opacity-50"
+          className="mt-10 group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#FF6A00] to-[#FF8C33] px-6 font-grotesque text-[11px] font-black uppercase tracking-[.25em] text-white transition-all disabled:opacity-50 hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,106,0,0.3)]"
         >
-          {loading ? 'Criando...' : 'Criar conta'}
+          {loading ? 'Criando...' : 'Iniciar Operação'}
         </button>
       </form>
 
-      <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
-        Já tem conta?{' '}
-        <Link href="/login" className="text-[#FF6A00] font-bold uppercase tracking-widest">Entrar</Link>
+      <p className="mt-10 text-center text-xs font-medium text-white/50">
+        Já possui conta?{' '}
+        <Link href="/login" className="text-[#FF6A00] font-black uppercase tracking-widest hover:text-[#ff8c33] transition-colors">
+          Entrar
+        </Link>
       </p>
     </div>
   );
 }
+

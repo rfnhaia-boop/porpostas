@@ -81,7 +81,11 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
       data.commercial = commercial;
       data.total = commercialTotals(finalItems, commercial).total;
       data.paymentTerms = commercialPaymentTerms(finalItems, commercial, formatBRL);
-      if (body.status === 'approved' && !protectedStatus) await createCommercialPayments(tx, { ...current, commercial }, finalItems);
+      if (body.status === 'approved' && !protectedStatus) {
+        const acceptedCommercial = (await createCommercialPayments(tx, { ...current, commercial }, finalItems)) ?? commercial;
+        data.commercial = acceptedCommercial;
+        data.paymentTerms = commercialPaymentTerms(finalItems, acceptedCommercial, formatBRL);
+      }
     } else if ('commercial' in body) data.commercial = Prisma.DbNull;
     if (newItems) {
       await tx.proposalItem.deleteMany({ where: { proposalId: id } });

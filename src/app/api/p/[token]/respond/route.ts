@@ -73,9 +73,9 @@ export async function POST(request: NextRequest, { params }: Ctx) {
             clientDueDate = body.dueDate;
           }
         }
-        await createCommercialPayments(tx, { ...current, commercial: config }, items, clientDueDate);
+        const acceptedCommercial = (await createCommercialPayments(tx, { ...current, commercial: config }, items, clientDueDate)) ?? config;
         for (const item of items) if (item.selected !== current.items.find(i => i.id === item.id)?.selected) await tx.proposalItem.update({ where: { id: item.id }, data: { selected: item.selected } });
-        return tx.proposal.update({ where: { id: current.id }, data: { status: decision, responseNote: note, respondedAt: new Date(), commercial: config, total: acceptedTotal, paymentTerms: commercialPaymentTerms(items, config, formatBRL) }, select: { status: true, respondedAt: true, responseNote: true } });
+        return tx.proposal.update({ where: { id: current.id }, data: { status: decision, responseNote: note, respondedAt: new Date(), commercial: acceptedCommercial, total: acceptedTotal, paymentTerms: commercialPaymentTerms(items, acceptedCommercial, formatBRL) }, select: { status: true, respondedAt: true, responseNote: true } });
       }
       return tx.proposal.update({ where: { id: current.id }, data: { status: decision, responseNote: note, respondedAt: new Date() }, select: { status: true, respondedAt: true, responseNote: true } });
     });

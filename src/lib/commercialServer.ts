@@ -14,4 +14,6 @@ export async function createCommercialPayments(tx: Prisma.TransactionClient, pro
   if (existing) throw new Error('Já existe cobrança nesta proposta. Revise o plano antes de aprovar novos valores.');
   const plan = commercialSchedule(items, config, { clientDueDate });
   await tx.payment.createMany({ data: plan.map(p => ({ ...p, proposalId: proposal.id, companyId: proposal.companyId })) });
+  // Store the actual start date so subsequent previews never move the accepted calendar.
+  return { ...config, firstDueDate: plan[0].dueDate.toISOString().slice(0, 10), dueDateMode: config.dueDateMode === 'client' ? (clientDueDate ? 'fixed' as const : 'month_end' as const) : config.dueDateMode };
 }

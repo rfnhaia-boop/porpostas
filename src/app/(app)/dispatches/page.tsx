@@ -4,48 +4,75 @@ import React, { useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmailTemplatesSettings } from '@/components/EmailTemplatesSettings';
 import { WhatsappTemplatesSettings } from '@/components/WhatsappTemplatesSettings';
-import { motion } from 'framer-motion';
-import { Mail, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, MessageCircle, Send } from 'lucide-react';
 
 const TABS = [
-  { id: 'email' as const, label: 'E-mail', icon: Mail },
-  { id: 'whatsapp' as const, label: 'WhatsApp', icon: MessageCircle },
+  { id: 'email' as const, label: 'E-mails Automáticos', icon: Mail, color: 'from-cyan-500 to-blue-500', shadow: 'shadow-[0_0_20px_rgba(6,182,212,0.4)]' },
+  { id: 'whatsapp' as const, label: 'WhatsApp', icon: MessageCircle, color: 'from-[#FF6A00] to-[#FF8C33]', shadow: 'shadow-[0_0_20px_rgba(255,106,0,0.4)]' },
 ];
 
 export default function DispatchesPage() {
   const [tab, setTab] = useState<'email' | 'whatsapp'>('email');
 
   return (
-    <div className="p-4 sm:p-6 lg:p-12 max-w-4xl mx-auto min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-12 min-h-screen text-white">
       <PageHeader
-        title="Disparos"
-        description="E-mails automáticos e mensagens de WhatsApp"
+        title="Motor de Disparo"
+        description="Ajuste os textos e gatilhos de comunicação que a NEX envia para os seus clientes"
+        action={
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+            <Send size={14} className="text-[#FF6A00]" /> Configuração Global
+          </div>
+        }
       />
 
-      <div className="mb-8 flex gap-2">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${
-              tab === id
-                ? 'bg-[#FF6A00] text-white'
-                : 'border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--foreground)]'
-            }`}
-          >
-            <Icon size={14} /> {label}
-          </button>
-        ))}
+      {/* TABS ELEGANTES */}
+      <div className="mb-12 flex flex-wrap gap-4 border-b border-white/5 pb-8">
+        {TABS.map(({ id, label, icon: Icon, color, shadow }) => {
+          const isActive = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`relative flex items-center gap-3 rounded-full px-8 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                isActive
+                  ? 'bg-white/[0.05] text-white'
+                  : 'text-white/40 hover:bg-white/[0.02] hover:text-white/70'
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="dispatchTab"
+                  className={`absolute inset-0 rounded-full bg-gradient-to-r ${color} opacity-20 blur-md`}
+                />
+              )}
+              {isActive && (
+                <motion.div
+                  layoutId="dispatchTabBorder"
+                  className="absolute inset-0 rounded-full border border-white/20"
+                />
+              )}
+              <Icon size={16} className={isActive ? (id === 'whatsapp' ? 'text-[#FF6A00]' : 'text-cyan-400') : ''} />
+              <span className="relative z-10">{label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <motion.div
-        key={tab}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full liquid-glass p-6 sm:p-8 rounded-[2rem]"
-      >
-        {tab === 'email' ? <EmailTemplatesSettings /> : <WhatsappTemplatesSettings />}
-      </motion.div>
+      <div className="relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 15, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -15, filter: 'blur(10px)' }}
+            transition={{ duration: 0.3 }}
+          >
+            {tab === 'email' ? <EmailTemplatesSettings /> : <WhatsappTemplatesSettings />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

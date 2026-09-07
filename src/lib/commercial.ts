@@ -90,6 +90,8 @@ export function validateCommercial(items: CommercialItem[], c: CommercialConfig,
   if (!items.length || items.length > 100) throw new Error('Inclua de 1 a 100 itens.');
   for (const item of items) {
     if (!item.name.trim() || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isSafeInteger(item.unitPrice) || item.unitPrice < 0 || item.unitPrice > 2_000_000_000) throw new Error('Revise os nomes, quantidades e valores dos itens.');
+    const lineTotal = Math.round(item.quantity * item.unitPrice);
+    if (!Number.isSafeInteger(lineTotal) || lineTotal > 2_000_000_000) throw new Error('O valor de um item supera o limite permitido.');
     if (!['once', 'monthly'].includes(item.billingType ?? 'once')) throw new Error('Cobrança inválida.');
     if (c.model === 'monthly' && item.billingType !== 'monthly') throw new Error('O modelo mensal aceita apenas mensalidades. Use implantação + mensalidade para combinar cobranças.');
     if (['fixed', 'items'].includes(c.model) && item.billingType === 'monthly') throw new Error('Escolha um modelo com mensalidade para incluir serviços recorrentes.');
@@ -121,15 +123,16 @@ export function commercialSchedule(
   const { once, monthly } = commercialTotals(items, c);
   const mode = c.dueDateMode ?? 'fixed';
   const iso = /^\d{4}-\d{2}-\d{2}$/;
+  if (mode === 'client' && opts.clientDueDate) parseCommercial({ ...c, firstDueDate: opts.clientDueDate });
   const base =
     mode === 'fixed'
       ? new Date(`${c.firstDueDate}T12:00:00.000Z`)
       : mode === 'client' && opts.clientDueDate && iso.test(opts.clientDueDate)
         ? new Date(`${opts.clientDueDate}T12:00:00.000Z`)
-        : currentMonthEnd();
+        : c.firstDueDate ? new Date(`${c.firstDueDate}T12:00:00.000Z`) : currentMonthEnd();
   const dateAt = (offset: number) => {
     const last = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset + 1, 0)).getUTCDate();
-    return new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset, Math.min(base.getUTCDate(), last), 12));
+    return new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset, mode === 'month_end' || (mode === 'client' && !opts.clientDueDate) ? last : Math.min(base.getUTCDate(), last), 12));
   };
   const plan: { label: string; amount: number; dueDate: Date }[] = [];
   if (once) {

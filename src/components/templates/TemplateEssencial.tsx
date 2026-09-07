@@ -39,7 +39,7 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] bg-[#FDFBF7]/90 px-10 py-16 shadow-[0_40px_100px_rgba(28,26,20,0.1)] ring-1 ring-black/[.03] backdrop-blur-3xl print:min-h-0 print:rounded-none print:bg-white print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
+        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] bg-[#FDFBF7]/90 px-5 md:px-10 py-16 shadow-[0_40px_100px_rgba(28,26,20,0.1)] ring-1 ring-black/[.03] backdrop-blur-3xl print:min-h-0 print:rounded-none print:bg-white print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
       >
         {/* Cabeçalho */}
         <motion.header variants={fadeUp} className="pb-16">
@@ -47,13 +47,13 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
             <span className="h-px w-10" style={{ backgroundColor: ORANGE }} />
             Proposta Comercial
           </div>
-          <h1 className="mt-8 max-w-2xl font-display text-[3.8rem] font-light leading-[1.05] tracking-[-.03em] md:text-[5.5rem] text-[#1C1A14]">
+          <h1 className="mt-8 max-w-2xl font-display text-5xl sm:text-[3.8rem] font-light leading-[1.05] tracking-[-.03em] md:text-[5.5rem] text-[#1C1A14]">
             Claro no escopo.
             <br />
             <span className="italic" style={{ color: ORANGE }}>Justo</span> no valor.
           </h1>
           
-          <div className="mt-16 grid gap-10 border-t-2 border-[#1C1A14] pt-10 text-sm md:grid-cols-[1.5fr_1fr_1fr]">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-10 border-t-2 border-[#1C1A14] pt-10 text-sm">
             <div className="flex flex-col gap-2">
               <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Proposto Por</p>
               <p className="mt-2 font-grotesque text-lg font-bold text-[#1C1A14]">{company.name}</p>
@@ -73,7 +73,7 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
 
         {/* Cliente */}
         {client && (
-          <motion.section variants={fadeUp} className="border-y border-black/5 bg-[#F6F4EB]/50 px-10 py-12 md:-mx-20 md:px-20">
+          <motion.section variants={fadeUp} className="border-y border-black/5 bg-[#F6F4EB]/50 px-5 md:px-10 py-12 md:-mx-20 md:px-20">
             <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Preparado Para</p>
             <p className="mt-4 font-display text-[2.8rem] font-light tracking-[-.02em] text-[#1C1A14]">{client.name}</p>
             {(client.company || client.document) && (
@@ -94,7 +94,7 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
             <motion.div
               variants={fadeUp}
               key={service.id}
-              className="group grid grid-cols-[auto_1fr_auto] items-start gap-8 border-b border-black/5 py-10 transition-colors hover:bg-black/[0.01] print:hover:bg-transparent"
+              className="group grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-start gap-8 border-b border-black/5 py-10 transition-colors hover:bg-black/[0.01] print:hover:bg-transparent"
             >
               <span className="font-grotesque text-sm font-black mt-1 transition-colors group-hover:opacity-100 opacity-60" style={{ color: ORANGE }}>
                 {String(index + 1).padStart(2, '0')}
@@ -119,7 +119,7 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
         <motion.section variants={fadeUp} className="mt-20 flex flex-col gap-10 rounded-[2rem] bg-black/5 border border-black/5 p-10 print:rounded-none print:border-0 print:border-t print:border-black/20 print:bg-transparent print:p-0">
           <div className="w-full">
             <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/40 font-grotesque">Investimento Total</p>
-            <p className="mt-4 font-display text-[4rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[5.5rem] break-words text-[#1C1A14]">
+            <p className="mt-4 font-display text-[clamp(2rem,8.5vw,5rem)] font-light leading-none tracking-[-.03em] tabular-nums break-words text-[#1C1A14]">
               {money(q.total)}
             </p>
           </div>
@@ -138,3 +138,4 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+

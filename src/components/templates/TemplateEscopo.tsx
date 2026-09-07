@@ -66,7 +66,7 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
             <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#FF6A00]/50" />
           </div>
           
-          <h1 className="mt-6 font-display text-[4rem] font-light leading-[.98] tracking-[-.03em] md:text-[5.5rem] drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+          <h1 className="mt-6 font-display text-5xl sm:text-[4rem] font-light leading-[.98] tracking-[-.03em] md:text-[5.5rem] drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">
             Entregas
             <br />
             do Projeto
@@ -160,7 +160,7 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
           <p className="relative z-10 font-grotesque text-[10px] font-black uppercase tracking-[.3em] text-[#FF6A00] print:text-black/50">
             Investimento Necessário
           </p>
-          <p className="relative z-10 mt-4 font-display text-[4.5rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[6rem] drop-shadow-[0_0_30px_rgba(255,106,0,0.25)] break-words print:drop-shadow-none">
+          <p className="relative z-10 mt-4 font-display text-[clamp(2rem,9vw,5.5rem)] font-light leading-none tracking-[-.03em] tabular-nums drop-shadow-[0_0_30px_rgba(255,106,0,0.25)] break-words print:drop-shadow-none">
             {money(q.total)}
           </p>
 
@@ -190,3 +190,4 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+

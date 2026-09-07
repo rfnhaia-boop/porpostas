@@ -204,3 +204,25 @@ html.dark { color-scheme: dark; }
   [style*="opacity"] { opacity: 1 !important; }
   [style*="transform"] { transform: none !important; }
 }
+
+/* Correcao absoluta para o Chrome Autofill - Padrão Rafael */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+    background-color: transparent !important;
+}
+
+/* Hack definitivo para matar a cor do Chrome Autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
+    background-color: transparent !important;
+    background-clip: content-box !important;
+}

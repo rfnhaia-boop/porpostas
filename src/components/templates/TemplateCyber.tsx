@@ -52,7 +52,7 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] border border-white/10 p-10 md:p-16 shadow-[0_40px_100px_rgba(0,0,0,0.8)] print:min-h-0 print:rounded-none print:border-none print:bg-white print:px-0 print:py-0 print:shadow-none"
+        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] border border-white/10 p-6 sm:p-10 md:p-16 shadow-[0_40px_100px_rgba(0,0,0,0.8)] print:min-h-0 print:rounded-none print:border-none print:bg-white print:px-0 print:py-0 print:shadow-none"
         style={{
           background: "linear-gradient(135deg, rgba(20,20,20,0.6) 0%, rgba(5,5,5,0.8) 100%)",
           backdropFilter: "blur(60px) saturate(200%)",
@@ -101,7 +101,7 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
                 </p>
               )}
             </div>
-            <dl className="grid grid-cols-2 gap-x-12 gap-y-2 text-right font-mono text-[11px]">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2 text-right font-mono text-[11px]">
               <div>
                 <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Validade</dt>
                 <dd className="mt-1 text-white/80 font-bold print:text-black">{q.validityDays}</dd>
@@ -124,7 +124,7 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
             <motion.div
               variants={fadeUp}
               key={service.id}
-              className="group grid grid-cols-[auto_1fr_auto] items-start gap-6 border-b border-white/5 py-10 transition-all hover:bg-white/[0.02] print:border-black/10 print:hover:bg-transparent"
+              className="group grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-start gap-6 border-b border-white/5 py-10 transition-all hover:bg-white/[0.02] print:border-black/10 print:hover:bg-transparent"
             >
               <span className="font-mono text-xs font-black tracking-widest mt-1 opacity-60 transition-opacity group-hover:opacity-100" style={{ color: EMBER }}>
                 {(index + 1).toString().padStart(2, '0')}
@@ -148,10 +148,10 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
         </section>
 
         {/* Total */}
-        <motion.section variants={fadeUp} className="mt-16 flex flex-col gap-10 rounded-3xl bg-black/40 border border-white/5 p-8 shadow-inner print:border-t print:border-black/20 print:bg-transparent print:p-0 print:shadow-none">
+        <motion.section variants={fadeUp} className="mt-16 flex flex-col gap-10 rounded-3xl bg-black/40 border border-white/5 p-5 sm:p-8 shadow-inner print:border-t print:border-black/20 print:bg-transparent print:p-0 print:shadow-none">
           <div className="w-full">
             <p className="font-mono text-[9px] uppercase tracking-[.3em] text-white/40 print:text-black/45">Investimento Total</p>
-            <p className="mt-2 font-display text-[3.8rem] font-light leading-none tracking-[-.03em] tabular-nums text-[#FF6A00] drop-shadow-[0_0_25px_rgba(255,106,0,0.3)] md:text-[5rem] print:drop-shadow-none print:text-black break-words">
+            <p className="mt-2 font-display text-[clamp(1.9rem,8vw,4.2rem)] font-light leading-none tracking-[-.03em] tabular-nums text-[#FF6A00] drop-shadow-[0_0_25px_rgba(255,106,0,0.3)] print:drop-shadow-none print:text-black break-words">
               {money(q.total)}
             </p>
           </div>
@@ -179,3 +179,4 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+

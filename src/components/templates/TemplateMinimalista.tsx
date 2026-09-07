@@ -37,10 +37,10 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative z-10 flex min-h-[29.7cm] w-full max-w-[21cm] flex-1 flex-col bg-[#FCFBF8] px-10 py-16 shadow-[0_40px_100px_rgba(22,21,19,0.15)] ring-1 ring-black/[.05] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
+        className="relative z-10 flex min-h-[29.7cm] w-full max-w-[21cm] flex-1 flex-col bg-[#FCFBF8] px-5 md:px-10 py-16 shadow-[0_40px_100px_rgba(22,21,19,0.15)] ring-1 ring-black/[.05] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
       >
         {/* Cabeçalho - grade arquitetural */}
-        <motion.div variants={fadeUp} className="grid grid-cols-2 border-y-2 border-[#161513] md:grid-cols-4">
+        <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-2 border-y-2 border-[#161513] md:grid-cols-4">
           <div className="border-r border-black/10 py-8 pr-6">
             <h1 className="font-display text-[2.6rem] font-medium leading-none tracking-[-.04em]">{company.name}</h1>
           </div>
@@ -60,7 +60,7 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
         {client && (
           <motion.div variants={fadeUp} className="mt-20">
             <p className="font-grotesque text-[9px] font-black uppercase tracking-[.3em] text-[#FF6A00]">Proposto Para</p>
-            <h2 className="mt-4 font-display text-[3.8rem] font-light leading-[1.02] tracking-[-.03em] md:text-[4.8rem]">{client.name}</h2>
+            <h2 className="mt-4 font-display text-5xl sm:text-[3.8rem] font-light leading-[1.02] tracking-[-.03em] md:text-[4.8rem]">{client.name}</h2>
             {(client.company || client.document) && (
               <p className="mt-3 font-grotesque text-xs uppercase tracking-[.2em] text-black/50">
                 {[client.company, client.document].filter(Boolean).join('   —   ')}
@@ -117,7 +117,7 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
           
           <div className="md:text-right shrink-0">
             <p className="font-grotesque text-[9px] font-black uppercase tracking-[.3em] text-[#FF6A00]">Total Consolidado</p>
-            <p className="mt-3 font-display text-[4rem] font-light leading-none tracking-[-.04em] tabular-nums md:text-[5.5rem]">
+            <p className="mt-3 font-display text-[clamp(2rem,8.5vw,5rem)] font-light leading-none tracking-[-.04em] tabular-nums break-words">
               {money(q.total)}
             </p>
           </div>
@@ -138,3 +138,4 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+

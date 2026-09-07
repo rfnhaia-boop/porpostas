@@ -38,7 +38,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col bg-[#F9FBFA] px-8 py-14 shadow-[0_40px_100px_rgba(13,91,67,0.15)] ring-1 ring-black/[.05] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-16 md:py-20"
+        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col bg-[#F9FBFA] px-8 py-14 shadow-[0_40px_100px_rgba(13,91,67,0.15)] ring-1 ring-black/[.05] print:min-h-0 print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-6 md:px-16 md:py-20"
       >
         {/* Cabeçalho */}
         <motion.header variants={fadeUp} className="flex flex-col justify-between gap-10 border-b-2 border-[#0D5B43]/20 pb-12 md:flex-row md:items-end">
@@ -46,7 +46,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
             <p className="font-grotesque text-[10px] font-black uppercase tracking-[.4em]" style={{ color: PINE }}>
               Mapa Detalhado de Custos
             </p>
-            <h1 className="mt-4 font-display text-[3.8rem] font-light leading-[.95] tracking-[-.02em] md:text-[5rem] text-[#0F221C]">
+            <h1 className="mt-4 font-display text-[clamp(2.25rem,8vw,5rem)] font-light leading-[.95] tracking-[-.02em] break-words text-[#0F221C]">
               Orçamento
               <br />
               Detalhado
@@ -80,7 +80,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
         {/* Tabela de Custos */}
         <motion.section variants={fadeUp} className="mt-16 flex-1">
           <div
-            className="grid grid-cols-[44px_1fr_130px] px-6 py-4 font-grotesque text-[9px] font-black uppercase tracking-[.25em] text-white md:grid-cols-[52px_1fr_80px_140px] rounded-t-xl"
+            className="grid grid-cols-1 sm:grid-cols-[44px_1fr_130px] px-6 py-4 font-grotesque text-[9px] font-black uppercase tracking-[.25em] text-white md:grid-cols-[52px_1fr_80px_140px] rounded-t-xl"
             style={{ backgroundColor: PINE }}
           >
             <span>Item</span>
@@ -93,7 +93,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
               <motion.div
                 variants={fadeUp}
                 key={service.id}
-                className="group grid grid-cols-[44px_1fr_130px] border-b border-[#0D5B43]/10 px-6 py-8 md:grid-cols-[52px_1fr_80px_140px] transition-colors hover:bg-[#0D5B43]/[0.02] print:border-black/10 last:border-0"
+                className="group grid grid-cols-1 sm:grid-cols-[44px_1fr_130px] border-b border-[#0D5B43]/10 px-6 py-8 md:grid-cols-[52px_1fr_80px_140px] transition-colors hover:bg-[#0D5B43]/[0.02] print:border-black/10 last:border-0"
               >
                 <span className="font-grotesque text-sm font-black opacity-60 transition-opacity group-hover:opacity-100" style={{ color: PINE }}>
                   {String(index + 1).padStart(2, '0')}
@@ -117,7 +117,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
         </motion.section>
 
         {/* Escopo + Total */}
-        <motion.section variants={fadeUp} className="mt-16 grid gap-10 md:grid-cols-[1fr_auto]">
+        <motion.section variants={fadeUp} className="mt-16 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10">
           <div className="pr-4">
             <p className="font-grotesque text-[9px] font-black uppercase tracking-[.3em] mb-4" style={{ color: PINE }}>
               Escopo, Condições e Premissas
@@ -132,7 +132,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
             </div>
             <div className="mt-6">
               <p className="font-grotesque text-[9px] font-black uppercase tracking-[.25em] text-[#0D5B43]/60 mb-2">Total Consolidado</p>
-              <strong className="block font-display text-[3.2rem] font-light leading-none tracking-[-.03em] tabular-nums" style={{ color: PINE }}>
+              <strong className="block font-display text-[clamp(1.8rem,7vw,3.2rem)] font-light leading-none tracking-[-.03em] tabular-nums break-words" style={{ color: PINE }}>
                 {money(q.total)}
               </strong>
             </div>
@@ -140,7 +140,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
         </motion.section>
 
         {/* Fechamento */}
-        <motion.section variants={fadeUp} className="mt-16 grid gap-8 border-t-2 border-[#0D5B43]/20 pt-10 font-grotesque md:grid-cols-3">
+        <motion.section variants={fadeUp} className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 border-t-2 border-[#0D5B43]/20 pt-10 font-grotesque md:grid-cols-3">
           <div className="flex flex-col gap-2">
             <span className="block text-[9px] font-black uppercase tracking-[.3em] text-[#0D5B43]/50">Prazo de Execução</span>
             <strong className="text-[13px] font-bold text-[#0F221C]">{q.timeline}</strong>
@@ -158,3 +158,4 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+

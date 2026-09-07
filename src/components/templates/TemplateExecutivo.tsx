@@ -42,7 +42,7 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] bg-[#0A0A0A]/80 px-10 py-16 shadow-[0_40px_100px_rgba(0,0,0,1)] ring-1 ring-white/10 backdrop-blur-3xl print:min-h-0 print:rounded-none print:bg-white print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
+        className="relative z-10 mx-auto flex min-h-[29.7cm] w-full max-w-[21cm] flex-col rounded-[2.5rem] bg-[#0A0A0A]/80 px-5 md:px-10 py-16 shadow-[0_40px_100px_rgba(0,0,0,1)] ring-1 ring-white/10 backdrop-blur-3xl print:min-h-0 print:rounded-none print:bg-white print:px-0 print:py-0 print:shadow-none print:ring-0 md:px-20 md:py-24"
       >
         {/* Fio de Ouro superior */}
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent opacity-80 print:hidden" />
@@ -84,11 +84,11 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
             >
               Proposta Comercial Exclusiva
             </p>
-            <h1 className="font-display text-[3.8rem] font-light leading-none tracking-[-.02em] md:text-[4.6rem] text-white">
+            <h1 className="font-display text-5xl sm:text-[3.8rem] font-light leading-none tracking-[-.02em] md:text-[4.6rem] text-white">
               Nº {q.proposalNumber}
             </h1>
           </div>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4 text-left md:text-right text-xs">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4 text-left md:text-right text-xs">
             {[
               ['Emissão', date],
               ['Validade', q.validityDays],
@@ -127,7 +127,7 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
             <motion.div
               variants={fadeUp}
               key={service.id}
-              className="grid grid-cols-[auto_1fr_auto] items-start gap-8 border-b border-white/[.05] py-10 transition-colors hover:bg-white/[.01] print:border-black/10 print:hover:bg-transparent"
+              className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-start gap-8 border-b border-white/[.05] py-10 transition-colors hover:bg-white/[.01] print:border-black/10 print:hover:bg-transparent"
             >
               <span className="font-grotesque text-sm font-black tracking-widest mt-1 opacity-70" style={{ color: BRASS }}>
                 {(i + 1).toString().padStart(2, '0')}
@@ -157,7 +157,7 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
               Investimento Consolidado
             </p>
             <p
-              className="mt-3 font-display text-[3.8rem] font-light leading-none tracking-[-.03em] tabular-nums md:text-[5rem] drop-shadow-[0_0_20px_rgba(212,175,55,0.2)] break-words print:drop-shadow-none"
+              className="mt-3 font-display text-[clamp(1.9rem,8vw,4.2rem)] font-light leading-none tracking-[-.03em] tabular-nums drop-shadow-[0_0_20px_rgba(212,175,55,0.2)] break-words print:drop-shadow-none"
               style={{ color: BRASS }}
             >
               {money(q.total)}
@@ -181,3 +181,4 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
     </div>
   );
 };
+
