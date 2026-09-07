@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSessionCookie } from 'better-auth/cookies';
 
 const AUTH_PATHS = ['/login', '/signup'];
-// Páginas públicas sem guard (linkadas na tela de consentimento do Google, etc.)
-const PUBLIC_PATHS = ['/privacidade', '/termos'];
+// Páginas públicas sem guard (tela de consentimento do Google, logos enviadas, etc.)
+const PUBLIC_PATHS = ['/privacidade', '/termos', '/uploads'];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
