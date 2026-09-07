@@ -2,9 +2,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSessionCookie } from 'better-auth/cookies';
 
 const AUTH_PATHS = ['/login', '/signup'];
+// Páginas públicas sem guard (linkadas na tela de consentimento do Google, etc.)
+const PUBLIC_PATHS = ['/privacidade', '/termos'];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return NextResponse.next();
+  }
   const isAuthPage = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const hasSession = Boolean(getSessionCookie(req));
 
