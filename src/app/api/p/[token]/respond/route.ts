@@ -64,7 +64,16 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         const items = current.items.map(i => ({ ...i, selected: i.optional ? optionalIds.includes(i.id) && (!i.packageId || i.packageId === config.selectedPackage) : true }));
         validateCommercial(items, config, true);
         acceptedTotal = commercialTotals(items, config).total;
-        await createCommercialPayments(tx, { ...current, commercial: config }, items);
+        // Modo "cliente escolhe": aceita a data enviada se for válida e dentro de ~45 dias; senão cai no fim do mês.
+        let clientDueDate: string | undefined;
+        if (config.dueDateMode === 'client' && typeof body.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.dueDate)) {
+          const d = new Date(`${body.dueDate}T12:00:00.000Z`);
+          const now = Date.now();
+          if (!Number.isNaN(d.getTime()) && d.getTime() >= now - 3 * 864e5 && d.getTime() <= now + 45 * 864e5) {
+            clientDueDate = body.dueDate;
+          }
+        }
+        await createCommercialPayments(tx, { ...current, commercial: config }, items, clientDueDate);
         for (const item of items) if (item.selected !== current.items.find(i => i.id === item.id)?.selected) await tx.proposalItem.update({ where: { id: item.id }, data: { selected: item.selected } });
         return tx.proposal.update({ where: { id: current.id }, data: { status: decision, responseNote: note, respondedAt: new Date(), commercial: config, total: acceptedTotal, paymentTerms: commercialPaymentTerms(items, config, formatBRL) }, select: { status: true, respondedAt: true, responseNote: true } });
       }

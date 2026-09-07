@@ -1,11 +1,18 @@
 export type CommercialModel = 'fixed' | 'monthly' | 'hybrid' | 'packages' | 'items';
 export type BillingType = 'once' | 'monthly';
+// Como o 1º vencimento é definido:
+//  fixed     — o dono escolhe uma data (firstDueDate)
+//  month_end — vence no último dia de cada mês
+//  client    — o cliente escolhe o dia ao aceitar (cai em month_end se não escolher)
+export type DueDateMode = 'fixed' | 'month_end' | 'client';
+export const DUE_DATE_MODES: DueDateMode[] = ['fixed', 'month_end', 'client'];
 export type CommercialConfig = {
   version: 1;
   model: CommercialModel;
   months: number;
   installments: number;
   firstDueDate: string;
+  dueDateMode: DueDateMode;
   commitmentMonths: number;
   exclusions: string;
   revisions: string;
@@ -31,7 +38,7 @@ export const COMMERCIAL_MODELS = [
 ] as const;
 
 export function newCommercialConfig(model: CommercialModel = 'fixed'): CommercialConfig {
-  return { version: 1, model, months: 3, installments: 1, firstDueDate: '', commitmentMonths: 0,
+  return { version: 1, model, months: 3, installments: 1, firstDueDate: '', dueDateMode: 'fixed', commitmentMonths: 0,
     exclusions: '', revisions: '', selectedPackage: 'essential',
     packages: [{ id: 'essential', name: 'Essencial' }, { id: 'professional', name: 'Profissional' }, { id: 'complete', name: 'Completo' }] };
 }
@@ -52,13 +59,15 @@ export function parseCommercial(raw: unknown): CommercialConfig | null {
   const commitmentMonths = integer('commitmentMonths', 0, months);
   const firstDueDate = typeof r.firstDueDate === 'string' ? r.firstDueDate : '';
   if (firstDueDate && (!/^\d{4}-\d{2}-\d{2}$/.test(firstDueDate) || Number.isNaN(Date.parse(firstDueDate)) || new Date(firstDueDate).toISOString().slice(0, 10) !== firstDueDate)) throw new Error('Informe uma data válida para o primeiro vencimento.');
+  // Propostas antigas não têm o campo — assumem 'fixed'.
+  const dueDateMode: DueDateMode = DUE_DATE_MODES.includes(r.dueDateMode as DueDateMode) ? (r.dueDateMode as DueDateMode) : 'fixed';
   const packages = newCommercialConfig().packages.map(p => {
     const found = Array.isArray(r.packages) ? r.packages.find(v => v && typeof v === 'object' && v.id === p.id) : null;
     return { id: p.id, name: typeof found?.name === 'string' && found.name.trim() ? found.name.trim().slice(0, 60) : p.name };
   });
   const selectedPackage = typeof r.selectedPackage === 'string' ? r.selectedPackage : '';
   if (model === 'packages' && !packages.some(p => p.id === selectedPackage)) throw new Error('Selecione um pacote válido.');
-  return { version: 1, model, months, installments, firstDueDate, commitmentMonths, packages, selectedPackage,
+  return { version: 1, model, months, installments, firstDueDate, dueDateMode, commitmentMonths, packages, selectedPackage,
     exclusions: typeof r.exclusions === 'string' ? r.exclusions.trim().slice(0, 4000) : '',
     revisions: typeof r.revisions === 'string' ? r.revisions.trim().slice(0, 1000) : '' };
 }
@@ -77,7 +86,7 @@ export function commercialTotals(items: CommercialItem[], c: CommercialConfig) {
 }
 
 export function validateCommercial(items: CommercialItem[], c: CommercialConfig, requireDate = false) {
-  if (requireDate && !c.firstDueDate) throw new Error('Defina o primeiro vencimento antes de enviar.');
+  if (requireDate && (c.dueDateMode ?? 'fixed') === 'fixed' && !c.firstDueDate) throw new Error('Defina o primeiro vencimento antes de enviar (ou mude o modo de vencimento).');
   if (!items.length || items.length > 100) throw new Error('Inclua de 1 a 100 itens.');
   for (const item of items) {
     if (!item.name.trim() || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isSafeInteger(item.unitPrice) || item.unitPrice < 0 || item.unitPrice > 2_000_000_000) throw new Error('Revise os nomes, quantidades e valores dos itens.');
@@ -96,11 +105,28 @@ export function validateCommercial(items: CommercialItem[], c: CommercialConfig,
   }
 }
 
+/** Último dia do mês corrente, meia-dia UTC — usado quando o vencimento não é data fixa. */
+function currentMonthEnd(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 12));
+}
+
 /** Preserva os centavos e o dia contratado, inclusive fevereiro e meses de 30 dias. */
-export function commercialSchedule(items: CommercialItem[], c: CommercialConfig) {
+export function commercialSchedule(
+  items: CommercialItem[],
+  c: CommercialConfig,
+  opts: { clientDueDate?: string } = {},
+) {
   validateCommercial(items, c, true);
   const { once, monthly } = commercialTotals(items, c);
-  const base = new Date(`${c.firstDueDate}T12:00:00.000Z`);
+  const mode = c.dueDateMode ?? 'fixed';
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  const base =
+    mode === 'fixed'
+      ? new Date(`${c.firstDueDate}T12:00:00.000Z`)
+      : mode === 'client' && opts.clientDueDate && iso.test(opts.clientDueDate)
+        ? new Date(`${opts.clientDueDate}T12:00:00.000Z`)
+        : currentMonthEnd();
   const dateAt = (offset: number) => {
     const last = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset + 1, 0)).getUTCDate();
     return new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset, Math.min(base.getUTCDate(), last), 12));
@@ -119,6 +145,9 @@ export function commercialPaymentTerms(items: CommercialItem[], c: CommercialCon
   const parts: string[] = [];
   if (once) parts.push(`${monthly ? 'Implantação' : 'Pagamento do projeto'}: ${money(once)}${c.installments > 1 ? ` em ${c.installments} parcelas mensais (ajuste de centavos nas primeiras parcelas)` : ' em pagamento único'}`);
   if (monthly) parts.push(`${c.months} mensalidades de ${money(monthly)}. Vigência: ${c.months} meses${c.commitmentMonths ? `; permanência mínima: ${c.commitmentMonths} meses` : ''}`);
-  parts.push(c.firstDueDate ? `Primeiro vencimento: ${c.firstDueDate.split('-').reverse().join('/')}. Demais vencimentos no mesmo dia dos meses seguintes, limitado ao último dia do mês` : 'Primeiro vencimento a definir antes do envio');
+  const mode = c.dueDateMode ?? 'fixed';
+  if (mode === 'month_end') parts.push('Vencimento no último dia de cada mês');
+  else if (mode === 'client') parts.push('O cliente define o dia do 1º vencimento ao aceitar; os seguintes caem no mesmo dia dos meses seguintes, limitado ao último dia do mês');
+  else parts.push(c.firstDueDate ? `Primeiro vencimento: ${c.firstDueDate.split('-').reverse().join('/')}. Demais vencimentos no mesmo dia dos meses seguintes, limitado ao último dia do mês` : 'Primeiro vencimento a definir antes do envio');
   return parts.join('. ') + '.';
 }

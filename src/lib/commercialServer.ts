@@ -7,11 +7,11 @@ export function commercialRevision(p: { commercial: unknown; items: (CommercialI
 }
 
 /** Called only while the proposal row is locked, within the approval transaction. */
-export async function createCommercialPayments(tx: Prisma.TransactionClient, proposal: { id: string; companyId: string; commercial: unknown }, items: CommercialItem[]) {
+export async function createCommercialPayments(tx: Prisma.TransactionClient, proposal: { id: string; companyId: string; commercial: unknown }, items: CommercialItem[], clientDueDate?: string) {
   const config = parseCommercial(proposal.commercial);
   if (!config) return;
   const existing = await tx.payment.count({ where: { proposalId: proposal.id } });
   if (existing) throw new Error('Já existe cobrança nesta proposta. Revise o plano antes de aprovar novos valores.');
-  const plan = commercialSchedule(items, config);
+  const plan = commercialSchedule(items, config, { clientDueDate });
   await tx.payment.createMany({ data: plan.map(p => ({ ...p, proposalId: proposal.id, companyId: proposal.companyId })) });
 }
