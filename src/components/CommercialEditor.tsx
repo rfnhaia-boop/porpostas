@@ -204,8 +204,8 @@ export function CommercialEditor() {
                     <label className="flex flex-col">
                       <span className={labelStyle}>Cobrança</span>
                       <select className={sleekSelect} value={s.billingType ?? 'once'} onChange={e => edit({ billingType: e.target.value as 'once' | 'monthly' })}>
-                        <option value="once" className="bg-neutral-900 text-white">Valor único</option>
-                        <option value="monthly" className="bg-neutral-900 text-white">Mensalidade</option>
+                        {c.model !== 'monthly' && <option value="once" className="bg-neutral-900 text-white">Valor único</option>}
+                        {!['fixed', 'items'].includes(c.model) && <option value="monthly" className="bg-neutral-900 text-white">Mensalidade</option>}
                       </select>
                     </label>
                     {c.model === 'packages' && (

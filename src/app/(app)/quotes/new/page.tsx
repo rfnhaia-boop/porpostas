@@ -39,8 +39,14 @@ export default function NewQuotePage() {
       updateQuoteDraft({ services: quoteDraft.services.filter((s) => s.id !== service.id) });
       return;
     }
+    // A cobrança do item tem que respeitar o modelo comercial escolhido:
+    // 'monthly' força mensalidade; 'fixed'/'items' só aceitam valor único;
+    // 'hybrid'/'packages' (ou sem modelo) mantêm o que veio do catálogo.
+    const m = quoteDraft.commercial?.model;
+    const billingType =
+      m === 'monthly' ? 'monthly' : m === 'fixed' || m === 'items' ? 'once' : service.billingType ?? 'once';
     const patch: Partial<typeof quoteDraft> = {
-      services: [...quoteDraft.services, { ...service, quantity: 1, billingType: quoteDraft.commercial?.model === 'monthly' ? 'monthly' : service.billingType ?? 'once', optional: false, selected: true, packageId: '' }],
+      services: [...quoteDraft.services, { ...service, quantity: 1, billingType, optional: false, selected: true, packageId: '' }],
     };
     // Se o serviço tem prazo padrão e o prazo ainda está no default, aproveita.
     if (service.defaultTimeline && quoteDraft.timeline === DEFAULT_TIMELINE) {
