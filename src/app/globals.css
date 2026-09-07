@@ -11,6 +11,9 @@
 }
 
 :root {
+  /* Faz os controles nativos (date, number, select, scrollbar) seguirem o tema.
+     Sem isso, o <input type="date"> some no fundo escuro. */
+  color-scheme: light;
   --background: #EEF0F4;
   --foreground: #0A0A0A;
   --panel-bg: #F5F5F5;
@@ -22,6 +25,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0A0A0A;
   --foreground: #FFFFFF;
   --panel-bg: #1A1A1A;
