@@ -57,6 +57,216 @@ export function revenueByMonth(proposals: Proposal[], months = 6): MonthPoint[] 
   return buckets.map((b) => ({ key: b.key, label: b.label, value: sums.get(b.key) ?? 0 }));
 }
 
+/** Saúde da carteira de recebíveis — tudo derivado de proposals[].payments[].entries[]. */
+export interface PaymentHealth {
+  toReceive: number; // centavos ainda em aberto, dentro do prazo
+  overdue: number; // centavos vencidos e não pagos
+  overdueCount: number; // nº de meses/cobranças vencidos
+  awaitingCount: number; // recibos que o cliente anexou e o dono ainda não conferiu
+  receivedThisMonth: number; // centavos que entraram no mês corrente
+}
+
+export function paymentHealth(proposals: Proposal[]): PaymentHealth {
+  const now = new Date();
+  const thisKey = monthKey(now);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let toReceive = 0;
+  let overdue = 0;
+  let overdueCount = 0;
+  let awaitingCount = 0;
+  let receivedThisMonth = 0;
+
+  for (const p of proposals) {
+    for (const pay of p.payments) {
+      if (pay.status === 'paid') {
+        if (pay.paidAt && monthKey(new Date(pay.paidAt)) === thisKey) receivedThisMonth += pay.amount;
+        continue;
+      }
+      const entries = pay.entries ?? [];
+      const verified = entries.filter((e) => e.status === 'verified').reduce((s, e) => s + e.amount, 0);
+      const remaining = Math.max(0, pay.amount - verified);
+      awaitingCount += entries.filter((e) => e.status === 'awaiting_verification').length;
+      if (remaining <= 0) continue;
+      const due = pay.dueDate ? new Date(pay.dueDate) : null;
+      if (due && due < today) {
+        overdue += remaining;
+        overdueCount += 1;
+      } else {
+        toReceive += remaining;
+      }
+    }
+  }
+
+  return { toReceive, overdue, overdueCount, awaitingCount, receivedThisMonth };
+}
+
+/** Quantas propostas em cada status — pra rosca de "quem aprovou, quem não". */
+export interface StatusSlice {
+  key: string;
+  label: string;
+  color: string;
+  count: number;
+}
+
+const STATUS_META: { key: Proposal['status']; label: string; color: string }[] = [
+  { key: 'draft', label: 'Rascunho', color: '#6b7280' },
+  { key: 'sent', label: 'Enviada', color: '#f59e0b' },
+  { key: 'changes_requested', label: 'Alteração pedida', color: '#eab308' },
+  { key: 'approved', label: 'Aprovada', color: '#22c55e' },
+  { key: 'in_progress', label: 'Em execução', color: '#3b82f6' },
+  { key: 'delivered', label: 'Entregue', color: '#14b8a6' },
+  { key: 'declined', label: 'Recusada', color: '#ef4444' },
+];
+
+export function statusBreakdown(proposals: Proposal[]): StatusSlice[] {
+  const counts = new Map<string, number>();
+  for (const p of proposals) counts.set(p.status, (counts.get(p.status) ?? 0) + 1);
+  return STATUS_META.map((m) => ({
+    key: m.key,
+    label: m.label,
+    color: m.color,
+    count: counts.get(m.key) ?? 0,
+  })).filter((s) => s.count > 0);
+}
+
+/** Ranking de clientes por valor fechado (aprovado + execução + entregue). */
+export interface ClientRank {
+  name: string;
+  total: number; // centavos
+  count: number;
+}
+export function topClients(proposals: Proposal[], limit = 5): ClientRank[] {
+  const m = new Map<string, { total: number; count: number }>();
+  for (const p of proposals) {
+    if (!(CLOSED_STATUSES as readonly string[]).includes(p.status)) continue;
+    const name = p.client?.name?.trim() || 'Sem cliente';
+    const cur = m.get(name) ?? { total: 0, count: 0 };
+    cur.total += p.total;
+    cur.count += 1;
+    m.set(name, cur);
+  }
+  return [...m.entries()]
+    .map(([name, v]) => ({ name, total: v.total, count: v.count }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, limit);
+}
+
+/** Serviços/produtos que mais aparecem em propostas fechadas (por receita gerada). */
+export interface ServiceRank {
+  name: string;
+  count: number;
+  revenue: number; // centavos
+}
+export function topServices(proposals: Proposal[], limit = 5): ServiceRank[] {
+  const m = new Map<string, { count: number; revenue: number }>();
+  for (const p of proposals) {
+    if (!(CLOSED_STATUSES as readonly string[]).includes(p.status)) continue;
+    for (const it of p.items) {
+      const key = it.name.trim();
+      if (!key) continue;
+      const cur = m.get(key) ?? { count: 0, revenue: 0 };
+      cur.count += 1;
+      cur.revenue += it.price;
+      m.set(key, cur);
+    }
+  }
+  return [...m.entries()]
+    .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit);
+}
+
+/** Próximas cobranças em aberto (e as vencidas primeiro), ordenadas por vencimento. */
+export interface UpcomingBill {
+  id: string;
+  project: string;
+  client: string;
+  label: string;
+  amount: number; // centavos ainda em aberto
+  dueDate: string | null;
+  daysUntil: number | null;
+  overdue: boolean;
+}
+export function upcomingBills(proposals: Proposal[], limit = 6): UpcomingBill[] {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const out: UpcomingBill[] = [];
+  for (const p of proposals) {
+    for (const pay of p.payments) {
+      if (pay.status === 'paid') continue;
+      const verified = (pay.entries ?? [])
+        .filter((e) => e.status === 'verified')
+        .reduce((s, e) => s + e.amount, 0);
+      const remaining = Math.max(0, pay.amount - verified);
+      if (remaining <= 0) continue;
+      const due = pay.dueDate ? new Date(pay.dueDate) : null;
+      const daysUntil = due ? Math.round((due.getTime() - today.getTime()) / 86_400_000) : null;
+      out.push({
+        id: pay.id,
+        project: p.title?.trim() || `#${p.proposalNumber}`,
+        client: p.client?.name?.trim() || '',
+        label: pay.label,
+        amount: remaining,
+        dueDate: pay.dueDate,
+        daysUntil,
+        overdue: daysUntil !== null && daysUntil < 0,
+      });
+    }
+  }
+  return out
+    .sort((a, b) => {
+      if (a.dueDate === null) return 1;
+      if (b.dueDate === null) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    })
+    .slice(0, limit);
+}
+
+/** Nota média das avaliações mensais + quantas foram feitas. */
+export interface Satisfaction {
+  avg: number | null;
+  count: number;
+}
+export function satisfaction(proposals: Proposal[]): Satisfaction {
+  let sum = 0;
+  let count = 0;
+  for (const p of proposals) {
+    for (const r of p.reviews ?? []) {
+      sum += r.rating;
+      count += 1;
+    }
+  }
+  return { avg: count ? sum / count : null, count };
+}
+
+/** Valor médio das propostas fechadas. */
+export function avgTicket(proposals: Proposal[]): number | null {
+  const closed = proposals.filter((p) => (CLOSED_STATUSES as readonly string[]).includes(p.status));
+  if (!closed.length) return null;
+  return Math.round(closed.reduce((s, p) => s + p.total, 0) / closed.length);
+}
+
+/** Propostas enviadas e sem resposta há N+ dias — pra cobrar retorno. */
+export interface StaleProposal {
+  id: string;
+  title: string;
+  client: string;
+  days: number;
+}
+export function staleProposals(proposals: Proposal[], minDays = 3): StaleProposal[] {
+  const now = Date.now();
+  return proposals
+    .filter((p) => (p.status === 'sent' || p.status === 'changes_requested') && !p.respondedAt)
+    .map((p) => ({
+      id: p.id,
+      title: p.title?.trim() || `#${p.proposalNumber}`,
+      client: p.client?.name?.trim() || '',
+      days: Math.floor((now - new Date(p.createdAt).getTime()) / 86_400_000),
+    }))
+    .filter((p) => p.days >= minDays)
+    .sort((a, b) => b.days - a.days);
+}
+
 /** Aprovadas / (aprovadas + recusadas). Ignora rascunho, enviada, pedido de alteração. */
 export function conversionRate(proposals: Proposal[]): number | null {
   const approved = proposals.filter((p) => (CLOSED_STATUSES as readonly string[]).includes(p.status)).length;

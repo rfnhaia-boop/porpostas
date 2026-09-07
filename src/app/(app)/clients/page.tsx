@@ -34,7 +34,7 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="p-12 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-12 min-h-screen">
       <PageHeader
         title="Clientes"
         description="Gestão da base de clientes"
@@ -52,9 +52,9 @@ export default function ClientsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="liquid-glass p-10 rounded-[2rem] mb-12 border-[#FF6A00]/20"
+          className="liquid-glass p-5 sm:p-10 rounded-[2rem] mb-8 sm:mb-12 border-[#FF6A00]/20"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8">
             <InputExpansivo label="Nome Completo" value={newClient.name || ''} onChange={e => setNewClient({...newClient, name: e.target.value})} />
             <InputExpansivo label="Empresa" value={newClient.company || ''} onChange={e => setNewClient({...newClient, company: e.target.value})} />
             <InputExpansivo label="CNPJ / CPF" value={newClient.document || ''} onChange={e => setNewClient({...newClient, document: e.target.value})} />
@@ -75,18 +75,18 @@ export default function ClientsPage() {
             <motion.div
               key={client.id}
               layout
-              className="liquid-glass p-8 rounded-3xl group relative hover:shadow-[0_0_30px_rgba(255,106,0,0.15)] transition-all duration-500"
+              className="liquid-glass p-6 sm:p-8 rounded-3xl group relative hover:shadow-[0_0_30px_rgba(255,106,0,0.15)] transition-all duration-500"
             >
-              <h3 className="text-xl font-bold uppercase tracking-wide text-[var(--foreground)] mb-2">{client.name}</h3>
-              {client.company && <p className="text-[#FF6A00] text-sm uppercase tracking-widest mb-4">{client.company}</p>}
-              <div className="space-y-2 text-[var(--text-muted)] text-sm">
+              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-[var(--foreground)] mb-2 pr-8 break-words">{client.name}</h3>
+              {client.company && <p className="text-[#FF6A00] text-sm uppercase tracking-widest mb-4 break-words">{client.company}</p>}
+              <div className="space-y-2 text-[var(--text-muted)] text-sm break-words">
                 <p>Doc: {client.document || 'N/A'}</p>
                 <p>Email: {client.email || 'N/A'}</p>
               </div>
 
               <button
                 onClick={() => removeClient(client.id)}
-                className="absolute top-6 right-6 text-red-500/50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                className="absolute top-6 right-6 text-red-500/50 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
               >
                 <Trash2 size={20} />
               </button>

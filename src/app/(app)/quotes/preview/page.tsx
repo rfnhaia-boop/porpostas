@@ -1,10 +1,12 @@
 'use client';
 
+import { commercialTotals, commercialPaymentTerms, validateCommercial } from '@/lib/commercial';
+import { CommercialChoices } from '@/components/CommercialChoices';
 import React, { useState } from 'react';
 import { usePlatformStore } from '@/store/usePlatformStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X, XCircle } from 'lucide-react';
 import { TemplateRenderer, TEMPLATE_OPTIONS as TEMPLATES } from '@/components/templates/TemplateRenderer';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { formatBRL } from '@/lib/money';
@@ -28,10 +30,12 @@ export default function PreviewPage() {
       ? { id: quoteDraft.proposalId, publicToken: quoteDraft.publicToken }
       : null,
   );
-  const paymentTerms = quoteDraft.paymentTerms || DEFAULT_PAYMENT_TERMS;
+  const commercialItems = quoteDraft.services.map(s => ({ ...s, unitPrice: s.price }));
+  const paymentTerms = quoteDraft.commercial ? commercialPaymentTerms(commercialItems, quoteDraft.commercial, formatBRL) : quoteDraft.paymentTerms || DEFAULT_PAYMENT_TERMS;
 
   const draftClient = clients.find((c) => c.id === quoteDraft.clientId) ?? null;
   const quoteView: QuoteView = {
+    commercial: quoteDraft.commercial,
     company: companyInfo,
     client: draftClient
       ? {
@@ -48,6 +52,7 @@ export default function PreviewPage() {
     notes: quoteDraft.notes,
     items: quoteDraft.services.map((s) => ({
       id: s.id,
+      billingType: s.billingType, optional: s.optional, selected: s.selected, packageId: s.packageId,
       name: s.name,
       description: s.description,
       details: s.details ?? [],
@@ -56,7 +61,7 @@ export default function PreviewPage() {
       unitPrice: s.price,
       price: Math.round((s.quantity ?? 1) * s.price),
     })),
-    total: quoteDraft.services.reduce((sum, s) => sum + Math.round((s.quantity ?? 1) * s.price), 0),
+    total: quoteDraft.commercial ? commercialTotals(commercialItems, quoteDraft.commercial).total : quoteDraft.services.reduce((sum, s) => sum + Math.round((s.quantity ?? 1) * s.price), 0),
   };
 
   // Ex.: total R$ 3.000 em 3x -> "3x mensais de R$ 1.000,00"
@@ -66,18 +71,21 @@ export default function PreviewPage() {
     return `${safeN}x mensais de ${formatBRL(per)}`;
   };
 
-  const accessPhrase = quoteDraft.accessPhrase.trim() || null;
+  const accessPhrase = quoteDraft.accessPhrase?.trim() || null;
 
   const buildPayload = () => ({
+    commercial: quoteDraft.commercial,
     clientId: quoteDraft.clientId,
     template: quoteDraft.template,
     proposalNumber: quoteDraft.proposalNumber,
+    title: quoteDraft.title,
     validityDays: quoteDraft.validityDays,
     timeline: quoteDraft.timeline,
     paymentTerms,
     notes: quoteDraft.notes,
     accessPhrase,
     items: quoteDraft.services.map((s) => ({
+      billingType: s.billingType, optional: s.optional, selected: s.selected, packageId: s.packageId,
       name: s.name,
       description: s.description,
       details: s.details ?? [],
@@ -89,9 +97,12 @@ export default function PreviewPage() {
 
   // Cria a proposta na 1ª vez; nas seguintes atualiza os campos, os itens e o status.
   const persistProposal = async (status: 'draft' | 'sent') => {
+    if (quoteDraft.commercial) validateCommercial(commercialItems, quoteDraft.commercial, status === 'sent');
     if (saved) {
       await api.proposals.update(saved.id, {
+        commercial: quoteDraft.commercial,
         proposalNumber: quoteDraft.proposalNumber,
+        title: quoteDraft.title,
         template: quoteDraft.template,
         validityDays: quoteDraft.validityDays,
         timeline: quoteDraft.timeline,
@@ -106,6 +117,7 @@ export default function PreviewPage() {
     const created = await api.proposals.create({ ...buildPayload(), status });
     const next = { id: created.id, publicToken: created.publicToken };
     setSaved(next);
+    updateQuoteDraft({ proposalId: next.id, publicToken: next.publicToken });
     return next;
   };
 
@@ -186,118 +198,182 @@ export default function PreviewPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--background)] print:bg-white print:text-black transition-colors">
-      {/* Settings Modal */}
-      {isEditingSettings && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm no-print">
-          <div className="bg-[var(--panel-bg)] p-12 rounded-3xl w-full max-w-xl border border-[var(--border-color)]">
-            <h2 className="text-2xl font-black uppercase tracking-widest mb-8 text-[var(--foreground)]">Ajustes do Orçamento</h2>
-            <div className="space-y-6">
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Nº da Proposta</label>
-                <input 
-                  type="text" 
-                  value={quoteDraft.proposalNumber} 
-                  onChange={(e) => updateQuoteDraft({ proposalNumber: e.target.value })}
-                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
-                />
-              </div>
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Validade</label>
-                <input 
-                  type="text" 
-                  value={quoteDraft.validityDays} 
-                  onChange={(e) => updateQuoteDraft({ validityDays: e.target.value })}
-                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
-                />
-              </div>
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Prazo Estimado</label>
-                <input 
-                  type="text" 
-                  value={quoteDraft.timeline} 
-                  onChange={(e) => updateQuoteDraft({ timeline: e.target.value })}
-                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2"
-                />
-              </div>
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Condição de pagamento</label>
-                <input 
-                  type="text" 
-                  value={paymentTerms} 
-                  onChange={(e) => updateQuoteDraft({ paymentTerms: e.target.value })} 
-                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2" 
-                />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {['À vista', '50% na aprovação e 50% na entrega', '30/60 dias'].map((value) => (
-                    <button
-                      key={value}
-                      onClick={() => updateQuoteDraft({ paymentTerms: value })}
-                      className="rounded-full border border-[var(--border-color)] px-3 py-1 text-[10px] text-[var(--text-muted)] hover:border-[#FF6A00] hover:text-[#FF6A00]"
-                    >
-                      {value}
-                    </button>
-                  ))}
+        {/* Settings Modal (Padrão Rafael) */}
+        <AnimatePresence>
+          {isEditingSettings && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-[4px] no-print p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/5 border-t-white/20 border-l-white/10 p-6 sm:p-8 md:p-12 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+                style={{
+                  background: "linear-gradient(135deg, rgba(30, 30, 30, 0.4) 0%, rgba(5, 5, 5, 0.6) 100%)",
+                  backdropFilter: "blur(60px) saturate(200%)",
+                  WebkitBackdropFilter: "blur(60px) saturate(200%)",
+                }}
+              >
+                {/* Reflexo superior do vidro */}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-50" />
+                
+                {/* Glow de Fundo Radial (Efeito Tomada) */}
+                <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[120%] h-40 bg-[#FF6A00]/15 blur-[120px] rounded-[100%] pointer-events-none" />
+
+                <div className="relative z-10 flex items-center justify-between mb-10">
+                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-[0.2em] text-white">
+                    Ajustes <span className="text-[#FF6A00]">do Orçamento</span>
+                  </h2>
+                  <button onClick={() => setIsEditingSettings(false)} className="text-white/40 hover:text-white transition-colors">
+                    <XCircle size={28} />
+                  </button>
                 </div>
 
-                {/* Parcelamento — calcula do total */}
-                <div className="mt-4 rounded-xl border border-[var(--border-color)] p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Parcelar em</span>
-                    <input
-                      type="number"
-                      min={2}
-                      max={48}
-                      value={installments}
-                      onChange={(e) => setInstallments(Number(e.target.value))}
-                      className="w-16 bg-transparent border-b-2 border-[var(--border-color)] text-lg font-bold text-[var(--foreground)] text-center focus:outline-none focus:border-[#FF6A00]"
-                    />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">x mensais</span>
-                    <button
-                      onClick={() => updateQuoteDraft({ paymentTerms: installmentText(installments) })}
-                      disabled={quoteView.total <= 0}
-                      className="ml-auto rounded-full bg-[#FF6A00] px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#0A0A0A] disabled:opacity-40"
-                    >
-                      Aplicar
-                    </button>
+                <div className="relative z-10 space-y-8">
+                  
+                  {/* Grupo Nome e Número */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Nome da Proposta</label>
+                      <input
+                        type="text"
+                        value={quoteDraft.title}
+                        onChange={(e) => updateQuoteDraft({ title: e.target.value })}
+                        placeholder="Ex.: Identidade..."
+                        className="w-full bg-transparent border-b-2 border-white/10 text-2xl md:text-3xl font-bold text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors placeholder:text-white/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Nº da Proposta</label>
+                      <input
+                        type="text"
+                        value={quoteDraft.proposalNumber}
+                        onChange={(e) => updateQuoteDraft({ proposalNumber: e.target.value })}
+                        className="w-full bg-transparent border-b-2 border-white/10 text-2xl md:text-3xl font-black text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+                      />
+                    </div>
                   </div>
-                  {quoteView.total > 0 && (
-                    <p className="mt-2 text-xs text-[var(--text-muted)]">
-                      Resultado: <span className="font-bold text-[#FF6A00]">{installmentText(installments)}</span>
-                    </p>
-                  )}
+
+                  {/* Grupo Prazos */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Validade</label>
+                      <input 
+                        type="text" 
+                        value={quoteDraft.validityDays} 
+                        onChange={(e) => updateQuoteDraft({ validityDays: e.target.value })}
+                        className="w-full bg-transparent border-b-2 border-white/10 text-2xl font-bold text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Prazo Estimado</label>
+                      <input 
+                        type="text" 
+                        value={quoteDraft.timeline} 
+                        onChange={(e) => updateQuoteDraft({ timeline: e.target.value })}
+                        className="w-full bg-transparent border-b-2 border-white/10 text-2xl font-bold text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {quoteDraft.commercial && <p className="text-sm text-white/80">{paymentTerms}<br/><button className="mt-3 text-[#FF6A00] underline" onClick={() => router.push('/quotes/new')}>Editar modelo e calendário de cobrança</button></p>}
+                  {!quoteDraft.commercial && <>
+                  {/* Condição de Pagamento */}
+                  <div className="pt-4">
+                    <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Condição de Pagamento</label>
+                    <input 
+                      type="text" 
+                      value={paymentTerms} 
+                      onChange={(e) => updateQuoteDraft({ paymentTerms: e.target.value })} 
+                      className="w-full bg-transparent border-b-2 border-white/10 text-2xl md:text-3xl font-black text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors" 
+                    />
+                    
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {['À vista', '50% na aprovação e 50% na entrega', '30/60 dias'].map((value) => (
+                        <button
+                          key={value}
+                          onClick={() => updateQuoteDraft({ paymentTerms: value })}
+                          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold tracking-wider text-white/60 transition-all hover:bg-white/10 hover:text-white"
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Parcelamento com Glassmorphism embutido */}
+                    <div className="mt-6 rounded-3xl border border-white/10 bg-black/40 p-5 md:p-6 shadow-inner flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Parcelar em</span>
+                        <input
+                          type="number"
+                          min={2}
+                          max={48}
+                          value={installments}
+                          onChange={(e) => setInstallments(Number(e.target.value))}
+                          className="w-20 bg-transparent border-b-2 border-white/20 text-3xl font-black text-[#FF6A00] text-center focus:outline-none focus:border-[#FF6A00] transition-colors pb-1"
+                        />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">x Mensais</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+                        <button
+                          onClick={() => updateQuoteDraft({ paymentTerms: installmentText(installments) })}
+                          disabled={quoteView.total <= 0}
+                          className="w-full md:w-auto rounded-full bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#0A0A0A] shadow-[0_0_15px_rgba(255,106,0,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(255,106,0,0.5)] disabled:opacity-40"
+                        >
+                          Aplicar
+                        </button>
+                        {quoteView.total > 0 && (
+                          <p className="text-[10px] text-white/50 tracking-wide">
+                            Fica: <span className="font-black text-[#FF6A00]">{installmentText(installments)}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  </>}
+                  {/* Extras */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Palavra-Chave (Senha)</label>
+                      <input
+                        type="text"
+                        value={quoteDraft.accessPhrase || ''}
+                        onChange={(e) => updateQuoteDraft({ accessPhrase: e.target.value })}
+                        placeholder="Deixe vazio para aberto"
+                        className="w-full bg-transparent border-b-2 border-white/10 text-xl font-bold text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors placeholder:text-white/20"
+                      />
+                      <p className="mt-2 text-[9px] uppercase tracking-wider text-white/30">Exige essa senha p/ acessar.</p>
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Observações / Termos</label>
+                      <textarea
+                        value={quoteDraft.notes}
+                        onChange={(e) => updateQuoteDraft({ notes: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-sm focus:outline-none focus:border-[#FF6A00] transition-colors min-h-[100px] resize-none"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Palavra-chave do link (opcional)</label>
-                <input
-                  type="text"
-                  value={quoteDraft.accessPhrase}
-                  onChange={(e) => updateQuoteDraft({ accessPhrase: e.target.value })}
-                  placeholder="ex: gustavo2026 — deixe vazio pra link aberto"
-                  className="w-full bg-transparent border-b-2 border-[var(--border-color)] text-xl font-bold text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] pb-2 placeholder:text-sm placeholder:font-normal placeholder:text-[var(--text-muted)]"
-                />
-                <p className="mt-1 text-[10px] text-[var(--text-muted)]">Se preenchida, o cliente precisa digitar essa palavra pra abrir a proposta. Você manda ela junto com o link.</p>
-              </div>
-              <div>
-                <label className="text-[var(--text-muted)] text-xs font-bold tracking-widest uppercase mb-1 block">Observações / Termos</label>
-                <textarea
-                  value={quoteDraft.notes}
-                  onChange={(e) => updateQuoteDraft({ notes: e.target.value })}
-                  className="w-full bg-[var(--background)] border border-[var(--border-color)] rounded-lg p-4 text-[var(--foreground)] focus:outline-none focus:border-[#FF6A00] min-h-[120px]"
-                />
-              </div>
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button
-                onClick={() => setIsEditingSettings(false)}
-                className="bg-[#FF6A00] text-[#0A0A0A] px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs"
-              >
-                Salvar e Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+                {/* Footer / Salvar */}
+                <div className="relative z-10 mt-12 flex justify-end">
+                  <button
+                    onClick={() => setIsEditingSettings(false)}
+                    className="w-full md:w-auto bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] text-[#0A0A0A] px-10 py-4 rounded-full font-black uppercase tracking-[0.2em] text-xs shadow-[0_0_30px_rgba(255,106,0,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(255,106,0,0.6)]"
+                  >
+                    Salvar Ajustes
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       {isSharing && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-5 backdrop-blur-md no-print">
@@ -329,21 +405,30 @@ export default function PreviewPage() {
       )}
 
       {/* Header/Controls (Not part of the actual quote, hidden on print via no-print) */}
-      <header className="fixed top-0 left-64 z-50 flex w-[calc(100%-16rem)] flex-wrap items-center justify-between gap-3 px-6 py-3 liquid-glass no-print">
-        <button 
-          onClick={() => router.push('/quotes/new')}
-          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--foreground)] uppercase tracking-widest text-xs font-bold"
-        >
-          <ArrowLeft size={16} /> Voltar
-        </button>
+      {/* Floating Header Premium (Padrão Rafael) */}
+      <header className="relative xl:fixed m-4 xl:m-0 xl:top-6 xl:left-[calc(16rem+1.5rem)] xl:right-6 z-50 flex flex-col xl:flex-row items-center justify-between gap-4 rounded-[2.5rem] xl:rounded-full border border-white/10 bg-[#050505]/60 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-[40px] saturate-[200%] no-print transition-all">
         
-        <div className="flex max-w-[46vw] gap-2 overflow-x-auto py-1">
+        {/* Lado Esquerdo: Voltar */}
+        <div className="flex items-center">
+          <button 
+            onClick={() => router.push('/quotes/new')}
+            className="group flex items-center gap-2 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50 transition-all hover:bg-white/5 hover:text-white"
+          >
+            <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+            <span className="hidden sm:inline">Voltar</span>
+          </button>
+        </div>
+        
+        {/* Centro: Templates (Segmented Control) */}
+        <div className="flex flex-wrap justify-center items-center gap-1 rounded-[1.75rem] xl:rounded-full border border-white/5 bg-white/5 p-1 shadow-inner">
           {TEMPLATES.map(t => (
             <button
               key={t.id}
               onClick={() => updateQuoteDraft({ template: t.id })}
-              className={`px-4 py-2 rounded-full uppercase tracking-widest text-[10px] transition-all ${
-                activeTemplate === t.id ? 'bg-[var(--foreground)] text-[var(--background)] font-bold' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] border border-[var(--border-color)]'
+              className={`relative px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                activeTemplate === t.id 
+                  ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
+                  : 'text-white/40 hover:text-white hover:bg-white/5'
               }`}
             >
               {t.name}
@@ -351,33 +436,60 @@ export default function PreviewPage() {
           ))}
         </div>
 
-        <div className="flex gap-4">
-          <button onClick={previewClientView} className="flex items-center gap-2 rounded-full border border-[var(--border-color)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--foreground)] transition-colors hover:bg-[var(--panel-bg)]"><Eye size={16} /> Visualizar</button>
-          <button onClick={handleSend} disabled={sendState === 'saving'} className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20 disabled:opacity-50"><Send size={16} /> {sendState === 'saving' ? 'Preparando...' : 'Enviar'}</button>
-          <button
-            onClick={() => setIsEditingSettings(true)}
-            className="border border-[var(--border-color)] text-[var(--foreground)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-[var(--panel-bg)] transition-colors"
-          >
-            <SlidersHorizontal size={16} /> Ajustar
-          </button>
+        {/* Lado Direito: Ações */}
+        <div className="flex items-center gap-2">
+          
+          {/* Ações Secundárias */}
+          <div className="flex items-center gap-1 rounded-full border border-white/5 bg-white/5 p-1">
+            <button 
+              onClick={previewClientView} 
+              className="flex items-center justify-center rounded-full p-2 text-white/50 transition-all hover:bg-white/10 hover:text-white"
+              title="Visualizar como Cliente"
+            >
+              <Eye size={16} />
+            </button>
+            <button
+              onClick={() => setIsEditingSettings(true)}
+              className="flex items-center justify-center rounded-full p-2 text-white/50 transition-all hover:bg-white/10 hover:text-white"
+              title="Ajustar Configurações"
+            >
+              <SlidersHorizontal size={16} />
+            </button>
+          </div>
+
+          <div className="h-6 w-px bg-white/10 mx-1"></div>
+
+          {/* Ações Principais */}
           <button
             onClick={handleSaveProposal}
             disabled={saveState === 'saving'}
-            className="border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FF6A00] hover:text-[#0A0A0A] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/5 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-all hover:bg-[#FF6A00]/20 disabled:opacity-50"
           >
-            <FileText size={16} /> {saveState === 'saving' ? 'Salvando...' : saveState === 'saved' ? 'Salvo!' : 'Salvar'}
+            <FileText size={15} /> 
+            <span className="hidden lg:inline">{saveState === 'saving' ? 'Salvando...' : saveState === 'saved' ? 'Salvo!' : 'Salvar'}</span>
           </button>
+
+          <button 
+            onClick={handleSend} 
+            disabled={sendState === 'saving'} 
+            className="flex items-center gap-2 rounded-full border border-[#FF6A00]/50 bg-[#FF6A00]/10 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-all hover:bg-[#FF6A00]/20 hover:shadow-[0_0_20px_rgba(255,106,0,0.2)] disabled:opacity-50"
+          >
+            <Send size={15} /> 
+            <span className="hidden lg:inline">{sendState === 'saving' ? '...' : 'Enviar'}</span>
+          </button>
+
           <button
             onClick={handlePrint}
-            className="bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] text-[#0A0A0A] shadow-[0_0_20px_rgba(255,106,0,0.3)] px-6 py-2 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(255,106,0,0.5)] transition-all"
+            className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] text-[#0A0A0A] shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,106,0,0.6)]"
           >
-            <Printer size={16} /> Imprimir / PDF
+            <Printer size={15} className="transition-transform group-hover:rotate-12" /> 
+            <span className="hidden lg:inline">Imprimir</span>
           </button>
         </div>
       </header>
 
       {/* Render Active Template */}
-      <div className="flex-1 mt-20 relative print-only">
+      <div className="flex-1 xl:mt-20 relative print-only">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTemplate}
@@ -387,6 +499,7 @@ export default function PreviewPage() {
             transition={{ duration: 0.5, ease: 'easeInOut' }}
             className="w-full min-h-full"
           >
+            <div className="no-print p-4"><CommercialChoices q={quoteView} onChange={(commercial, ids) => updateQuoteDraft({ commercial, services: quoteDraft.services.map(s => ({ ...s, selected: s.optional ? ids.includes(s.id) : true })) })}/></div>
             <TemplateRenderer template={activeTemplate} q={quoteView} />
           </motion.div>
         </AnimatePresence>

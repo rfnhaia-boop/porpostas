@@ -3,13 +3,13 @@
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, FileText, Settings, PlusCircle, Archive, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, PlusCircle, Archive, FolderCheck, Send, LogOut, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationsBell } from './NotificationsBell';
 import { useSession, signOut } from '@/lib/auth-client';
 
-export const Sidebar = () => {
+export const Sidebar = ({ open = false, onClose }: { open?: boolean; onClose?: () => void }) => {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -25,28 +25,46 @@ export const Sidebar = () => {
     { href: '/clients', label: 'Meus Clientes', icon: Users },
     { href: '/services', label: 'Serviços', icon: FileText },
     { href: '/proposals', label: 'Histórico', icon: Archive },
+    { href: '/approved', label: 'Aprovados', icon: FolderCheck },
+    { href: '/dispatches', label: 'Disparos', icon: Send },
     { href: '/settings', label: 'Configurações', icon: Settings },
   ];
 
   return (
-    <aside className="w-64 liquid-glass h-screen flex flex-col no-print fixed left-0 top-0 z-[100]">
+    <aside
+      className={`w-64 liquid-glass h-screen flex flex-col no-print fixed left-0 top-0 z-[100] transition-transform duration-300 ease-out lg:translate-x-0 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
       <div className="p-8 flex justify-between items-center">
         <h1 className="text-3xl font-black tracking-tighter uppercase text-[var(--foreground)]">
           NE<span className="text-[#FF6A00]">X</span>
         </h1>
         <div className="flex items-center gap-1">
-          <NotificationsBell />
-          <ThemeToggle />
+          <span className="hidden lg:flex items-center gap-1">
+            <NotificationsBell />
+            <ThemeToggle />
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Fechar menu"
+            className="lg:hidden text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
+          >
+            <X size={22} />
+          </button>
         </div>
       </div>
       
       <nav className="flex-1 px-4 space-y-2 mt-4">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive =
+            link.href === '/'
+              ? pathname === '/'
+              : pathname === link.href || pathname.startsWith(link.href + '/');
           
           return (
-            <Link key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} onClick={onClose}>
               <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all cursor-pointer relative group ${
                 isActive ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
               }`}>
@@ -66,7 +84,7 @@ export const Sidebar = () => {
       </nav>
 
       <div className="p-6 space-y-4">
-        <Link href="/quotes/new">
+        <Link href="/quotes/new?fresh=1" onClick={onClose}>
           <button className="w-full bg-[#FF6A00] text-[#0A0A0A] p-4 rounded-2xl font-black uppercase tracking-widest text-xs flex justify-center items-center gap-2 hover:opacity-90 transition-all shadow-[0_0_20px_rgba(255,106,0,0.3)]">
             <PlusCircle size={18} /> Orçamento
           </button>

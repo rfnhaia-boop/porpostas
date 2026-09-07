@@ -1,47 +1,41 @@
-// Gera o plano de cobrança de uma proposta: recorrência (única ou mensal) × parcelas por ciclo.
+// Gera o plano de cobrança de uma proposta: à vista ou mensal × N meses.
+// Sem data de vencimento configurável — o vencimento é sempre o FIM DO MÊS.
+// Como o cliente vai pagar cada mês (em quantas vezes, método) ele decide no
+// portal, anexando 1 recibo (PaymentEntry) por vez.
 
 export interface PaymentPlanInput {
   recurrence: 'once' | 'monthly';
   occurrences: number; // nº de meses (1 se "once")
-  installmentsPerCycle: number; // 1, 2 ou 3
-  cycleAmount: number; // centavos — valor de cada cobrança/mês
-  firstDueDate?: string | null; // ISO date, opcional
+  cycleAmount: number; // centavos — valor de cada mês
 }
 
 export interface GeneratedPayment {
   label: string;
   amount: number; // centavos
-  dueDate: Date | null;
+  dueDate: Date; // último dia do mês
+}
+
+/** Último dia do mês de `base` deslocado em `monthsAhead` meses. */
+function endOfMonth(base: Date, monthsAhead: number): Date {
+  // dia 0 do mês seguinte = último dia do mês alvo
+  return new Date(base.getFullYear(), base.getMonth() + monthsAhead + 1, 0);
 }
 
 export function generatePaymentPlan(input: PaymentPlanInput): GeneratedPayment[] {
-  const occurrences = Math.max(1, Math.min(60, Math.round(input.occurrences) || 1));
-  const perCycle = Math.max(1, Math.min(12, Math.round(input.installmentsPerCycle) || 1));
-  const base = Math.floor(input.cycleAmount / perCycle);
-  const remainder = input.cycleAmount - base * perCycle;
-  const firstDue = input.firstDueDate ? new Date(input.firstDueDate) : null;
+  const occurrences =
+    input.recurrence === 'monthly'
+      ? Math.max(1, Math.min(60, Math.round(input.occurrences) || 1))
+      : 1;
+  const amount = Math.round(input.cycleAmount);
+  const now = new Date();
 
   const out: GeneratedPayment[] = [];
-  for (let cycle = 1; cycle <= occurrences; cycle++) {
-    const dueDate = firstDue ? addMonths(firstDue, cycle - 1) : null;
-    for (let i = 1; i <= perCycle; i++) {
-      const amount = i === perCycle ? base + remainder : base; // resto vai na última parcela do ciclo
-      const label =
-        input.recurrence === 'monthly'
-          ? perCycle > 1
-            ? `Mês ${cycle} · Parcela ${i}/${perCycle}`
-            : `Mês ${cycle}`
-          : perCycle > 1
-            ? `Parcela ${i}/${perCycle}`
-            : 'Pagamento único';
-      out.push({ label, amount, dueDate });
-    }
+  for (let month = 1; month <= occurrences; month++) {
+    out.push({
+      label: input.recurrence === 'monthly' ? `Mês ${month}` : 'Pagamento único',
+      amount,
+      dueDate: endOfMonth(now, month - 1),
+    });
   }
   return out;
-}
-
-function addMonths(date: Date, months: number): Date {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d;
 }

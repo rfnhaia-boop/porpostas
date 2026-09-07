@@ -1,3 +1,6 @@
+import { commercialRevision } from '@/lib/commercialServer';
+import { parseCommercial } from '@/lib/commercial';
+import { CommercialProposal } from './CommercialProposal';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -7,6 +10,7 @@ import { unlockCookieName, unlockCookieValue } from '@/lib/proposalUnlock';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { TemplateRenderer } from '@/components/templates/TemplateRenderer';
 import { AccessGate } from './AccessGate';
+import { AccessLocked } from './AccessLocked';
 import { ClientResponse, PrintButton } from './ClientResponse';
 import { ViewPing } from './ViewPing';
 
@@ -37,10 +41,14 @@ export default async function PublicProposalPage({ params }: Props) {
 
   const { company, client, items } = proposal;
 
-  // Palavra-chave: se a proposta tem uma e o cookie não confere, mostra o portão.
+  // Código de acesso: se a proposta tem um e o cookie não confere, mostra o
+  // portão — ou a tela de "já capturada" quando o limite de vagas estourou.
   if (proposal.accessPhrase) {
     const provided = (await cookies()).get(unlockCookieName(token))?.value;
     if (provided !== unlockCookieValue(token, proposal.accessPhrase)) {
+      if (proposal.accessCount >= proposal.maxAccesses) {
+        return <AccessLocked company={{ name: company.name, logoUrl: company.logoUrl }} />;
+      }
       return (
         <AccessGate
           token={token}
@@ -52,6 +60,7 @@ export default async function PublicProposalPage({ params }: Props) {
   }
 
   const q: QuoteView = {
+    commercial: parseCommercial(proposal.commercial),
     company: {
       name: company.name,
       cnpj: company.cnpj,
@@ -72,7 +81,8 @@ export default async function PublicProposalPage({ params }: Props) {
     timeline: proposal.timeline,
     paymentTerms: proposal.paymentTerms || DEFAULT_PAYMENT_TERMS,
     notes: proposal.notes,
-    items: items.map((it) => ({
+    items: [...items].sort((a, b) => a.order - b.order).map((it) => ({
+      billingType: it.billingType, optional: it.optional, selected: it.selected, packageId: it.packageId,
       id: it.id,
       name: it.name,
       description: it.description,
@@ -103,6 +113,7 @@ export default async function PublicProposalPage({ params }: Props) {
       </div>
 
       {/* Mesmo template escolhido no preview */}
+      {q.commercial ? <CommercialProposal initial={q} template={proposal.template} token={token} status={proposal.status} note={proposal.responseNote} revision={commercialRevision(proposal)} /> : <>
       <TemplateRenderer template={proposal.template} q={q} />
 
       <ClientResponse
@@ -110,6 +121,7 @@ export default async function PublicProposalPage({ params }: Props) {
         initialStatus={proposal.status as 'draft' | 'sent' | 'approved' | 'declined' | 'changes_requested'}
         initialNote={proposal.responseNote}
       />
+      </>}
     </main>
   );
 }

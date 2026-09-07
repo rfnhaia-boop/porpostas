@@ -50,6 +50,21 @@ export const auth = betterAuth({
             }));
           return { data: { ...user, companyId: company.id } };
         },
+        after: async (user) => {
+          // Boas-vindas — fire-and-forget.
+          try {
+            const u = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { companyId: true, email: true, name: true },
+            });
+            if (u?.companyId) {
+              const { mailWelcome } = await import('./mailer');
+              void mailWelcome(u.companyId, u.email, u.name);
+            }
+          } catch {
+            /* não trava o cadastro */
+          }
+        },
       },
     },
   },

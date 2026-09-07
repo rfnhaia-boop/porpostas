@@ -15,15 +15,55 @@ model Company {
   logoUrl   String   @default("")
   email     String   @default("")
   phone     String   @default("")
+  // E-mail de contato confirmado — vira o Reply-To dos e-mails automáticos.
+  emailVerified     Boolean @default(false)
+  emailVerifyToken  String  @default("")
+  // PIX global — usado pra gerar o BR Code / QR em todas as propostas.
+  pixKey          String @default("") // a chave em si
+  pixKeyType      String @default("") // cpf | cnpj | email | phone | random ('' = não configurado)
+  pixReceiverName String @default("") // nome do recebedor (máx 25 no BR Code)
+  pixReceiverCity String @default("") // cidade do recebedor (máx 15 no BR Code)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  clients       Client[]
-  services      Service[]
-  proposals     Proposal[]
-  notifications Notification[]
-  payments      Payment[]
+  users             User[]
+  clients           Client[]
+  services          Service[]
+  proposals         Proposal[]
+  notifications     Notification[]
+  payments          Payment[]
+  emailTemplates    EmailTemplate[]
+  whatsappTemplates WhatsappTemplate[]
+}
+
+/// Mensagens de WhatsApp prontas ("clicar e enviar"). Texto puro, sem HTML.
+model WhatsappTemplate {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  key       String
+  enabled   Boolean  @default(true)
+  body      String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, key])
+  @@index([companyId])
+}
+
+/// Personalização dos e-mails automáticos por empresa. Sem linha = usa o padrão do código.
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  key       String // proposal_sent | payment_submitted | ... (ver lib/emailTemplates.ts)
+  enabled   Boolean  @default(true)
+  subject   String   @default("")
+  title     String   @default("")
+  body      String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, key])
+  @@index([companyId])
 }
 
 /// Notificação in-app para o dono (cliente visualizou / respondeu uma proposta).
@@ -110,15 +150,17 @@ model Verification {
 }
 
 model Client {
-  id        String   @id @default(cuid())
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name      String
-  orgName   String   @default("") // nome da empresa do cliente
-  document  String   @default("") // CPF / CNPJ
-  email     String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  orgName      String   @default("") // nome da empresa do cliente
+  document     String   @default("") // CPF / CNPJ
+  email        String   @default("")
+  phone        String?  // Telefone para contato/WhatsApp
+  passwordHash String?  // Senha para login no Portal do Cliente
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   proposals Proposal[]
 
@@ -136,7 +178,10 @@ model Service {
   unitLabel       String   @default("projeto") // projeto | kg | unidade | hora | ...
   price           Int      @default(0) // centavos, por unidade
   details         String[] @default([]) // o que inclui / entregáveis (lista de bullets)
+  defaultStages   String[] @default([]) // etapas/blocos padrão do serviço (título por linha)
   defaultTimeline String   @default("") // prazo padrão que pré-preenche a proposta
+  billingType     String   @default("once") // once | monthly
+  minCommitment   String   @default("") // fidelidade: permanência mínima antes de poder cancelar ("3 meses")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -150,6 +195,10 @@ model Proposal {
   clientId       String?
   client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   proposalNumber String
+  title          String    @default("") // nome da proposta ("Identidade da Marca", "Gestão de Tráfego"...)
+  commercial     Json?     // modelo comercial e condições aceitas; null preserva propostas antigas
+  paymentPattern Json?     // padrão de parcelamento do cliente: [{ amount, method }] — reaproveitado nos próximos meses
+  pixKeyOverride String    @default("") // se preenchida, sobrepõe o PIX global da empresa nesta proposta
   template       String    @default("cyber")
   validityDays   String    @default("15 Dias")
   timeline       String    @default("30 dias úteis")
@@ -158,7 +207,9 @@ model Proposal {
   total          Int       @default(0) // centavos
   status         String    @default("draft") // draft|sent|approved|declined|changes_requested|in_progress|delivered
   publicToken    String    @unique // link público: /p/<token> — gerado em app code (lib/token.ts), só A-Za-z0-9
-  accessPhrase   String?   // palavra-chave opcional; se setada, o link exige ela pra abrir
+  accessPhrase   String?   // palavra/código de acesso; se setado, o link exige ele pra abrir
+  maxAccesses    Int       @default(1) // quantos aparelhos podem abrir o link (1-3). Bateu, tranca.
+  accessCount    Int       @default(0) // quantos aparelhos já abriram (incrementa em cada unlock novo)
   responseNote   String?   // observação opcional que o cliente deixa ao responder
   viewedAt       DateTime? // 1ª vez que o cliente abriu o link
   viewCount      Int       @default(0)
@@ -175,11 +226,73 @@ model Proposal {
   contractData       Bytes?
   contractUploadedAt DateTime?
 
-  items    ProposalItem[]
-  payments Payment[]
+  items           ProposalItem[]
+  payments        Payment[]
+  reviews         MonthlyReview[]
+  progressUpdates ProgressUpdate[]
+  blocks          ProposalBlock[]
 
   @@index([companyId])
   @@index([clientId])
+}
+
+/// Etapa/bloco do projeto — estipulada no começo, marcada como feita conforme anda.
+model ProposalBlock {
+  id          String    @id @default(cuid())
+  proposalId  String
+  proposal    Proposal  @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+  title       String
+  description String    @default("")
+  status      String    @default("pending") // pending | done
+  link        String    @default("") // link da entrega dessa etapa (opcional)
+  doneAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([proposalId])
+}
+
+/// Diário de andamento: o dono conta, mês a mês, o que foi feito e o que entregou.
+model ProgressUpdate {
+  id         String     @id @default(cuid())
+  proposalId String
+  proposal   Proposal   @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  month      String // "2026-09"
+  summary    String     @default("") // resumo do que foi feito no mês
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deliveries Delivery[]
+
+  @@unique([proposalId, month])
+  @@index([proposalId])
+}
+
+/// Uma entrega dentro de um mês do diário (nome + link).
+model Delivery {
+  id               String         @id @default(cuid())
+  progressUpdateId String
+  progressUpdate   ProgressUpdate @relation(fields: [progressUpdateId], references: [id], onDelete: Cascade)
+  title            String         @default("")
+  url              String         @default("")
+  createdAt        DateTime       @default(now())
+
+  @@index([progressUpdateId])
+}
+
+/// Avaliação mensal do cliente sobre o serviço (nota + texto). Uma por mês por proposta.
+model MonthlyReview {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  month      String // "2026-09"
+  rating     Int // 1..5
+  comment    String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([proposalId, month])
+  @@index([proposalId])
 }
 
 /// Uma parcela de cobrança (à vista, parcelada ou recorrente/mensal) de uma proposta.
@@ -192,8 +305,38 @@ model Payment {
   label      String // "Mês 2 · Parcela 1/3"
   amount     Int // centavos
   dueDate    DateTime?
-  status     String    @default("pending") // pending | paid
+  status     String    @default("pending") // pending | paid | awaiting_verification
   paidAt     DateTime?
+  reminderSentAt DateTime? // último lembrete de vencimento enviado pro cliente (cron)
+
+  expectedPaymentDate DateTime? // "que dia ele pretende pagar"
+  paymentMethod       String?   // pix, boleto, etc.
+  billingLink         String?   // Chave Pix Copia e Cola, ou URL de boleto
+
+  // Legado (fluxo de 1 recibo por parcela) — mantido, mas o fluxo novo usa PaymentEntry.
+  receiptFileName String?
+  receiptMimeType String?
+  receiptSize     Int?
+  receiptData     Bytes?
+
+  entries PaymentEntry[]
+
+  createdAt DateTime @default(now())
+
+  @@index([proposalId])
+  @@index([companyId])
+}
+
+/// Cada pagamento que o cliente faz pra fechar um mês (Payment). Um mês pode ter
+/// vários — o cliente escolhe em quantas vezes e como paga, e anexa 1 recibo por vez.
+model PaymentEntry {
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount    Int // centavos deste recibo
+  method    String? // pix | boleto | transferencia | dinheiro | cartao | outro
+  paidOn    DateTime // data que o cliente informou / pretende pagar
+  status    String   @default("planned") // planned (sem recibo) | awaiting_verification | verified | rejected
 
   receiptFileName String?
   receiptMimeType String?
@@ -202,12 +345,16 @@ model Payment {
 
   createdAt DateTime @default(now())
 
-  @@index([proposalId])
-  @@index([companyId])
+  @@index([paymentId])
 }
 
 /// Snapshot do item de catálogo no momento em que a proposta foi salva.
 model ProposalItem {
+  billingType String @default("once")
+  optional    Boolean @default(false)
+  selected    Boolean @default(true)
+  packageId   String @default("")
+  order       Int @default(0)
   id          String   @id @default(cuid())
   proposalId  String
   proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)

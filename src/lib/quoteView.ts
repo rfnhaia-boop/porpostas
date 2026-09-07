@@ -1,8 +1,10 @@
+import type { CommercialConfig } from './commercial';
 // Forma única dos dados que os 6 templates de proposta consomem.
 // Serializável — funciona tanto no preview (dados do wizard) quanto na
 // página pública /p/<token> (dados do banco).
 
 export interface QuoteViewItem {
+  billingType?: string; optional?: boolean; selected?: boolean; packageId?: string;
   id: string;
   name: string;
   description: string;
@@ -38,6 +40,7 @@ export interface QuoteViewClient {
 }
 
 export interface QuoteView {
+  commercial?: CommercialConfig | null;
   company: QuoteViewCompany;
   client: QuoteViewClient | null;
   proposalNumber: string;

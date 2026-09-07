@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { signIn } from '@/lib/auth-client';
 
-function GoogleIcon() {
+export function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
       <path

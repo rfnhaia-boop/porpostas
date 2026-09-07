@@ -20,6 +20,10 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     data.status = 'pending';
     data.paidAt = null;
   }
+  if (body?.billingLink !== undefined) {
+    data.billingLink = body.billingLink;
+  }
+  
   const updated = await prisma.payment.update({ where: { id: paymentId }, data, omit: { receiptData: true } });
   return Response.json(updated);
 }
@@ -30,6 +34,9 @@ export async function DELETE(_request: NextRequest, { params }: Ctx) {
   if (!companyId) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
   const payment = await prisma.payment.findFirst({ where: { id: paymentId, proposalId: id, companyId } });
   if (!payment) return Response.json({ error: 'Parcela não encontrada.' }, { status: 404 });
+  const proposal = await prisma.proposal.findFirst({ where: { id, companyId }, select: { commercial: true } });
+  if (proposal?.commercial) return Response.json({ error: 'Esta cobrança faz parte dos valores aceitos pelo cliente.' }, { status: 400 });
+  if (payment.status === 'paid' || await prisma.paymentEntry.count({ where: { paymentId } })) return Response.json({ error: 'Não é possível apagar cobranças com pagamentos ou comprovantes.' }, { status: 400 });
   await prisma.payment.delete({ where: { id: paymentId } });
   return new Response(null, { status: 204 });
 }

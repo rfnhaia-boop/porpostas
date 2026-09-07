@@ -4,6 +4,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 
+import Script from 'next/script';
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 // Tipografia das propostas: serif de display com caráter editorial + grotesca refinada.
@@ -26,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${fraunces.variable} ${bricolage.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider>

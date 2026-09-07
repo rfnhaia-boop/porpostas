@@ -17,6 +17,8 @@
   --border-color: rgba(0, 0, 0, 0.1);
   --text-muted: rgba(0, 0, 0, 0.68);
   --text-inverse: #FFFFFF;
+  --bg-image: url('/bg-light.jpg');
+  --portal-bg-image: url('/portal-bg-light.jpg');
 }
 
 .dark {
@@ -26,6 +28,8 @@
   --border-color: rgba(255, 255, 255, 0.1);
   --text-muted: rgba(255, 255, 255, 0.72);
   --text-inverse: #0A0A0A;
+  --bg-image: url('/bg-dark.jpg');
+  --portal-bg-image: url('/portal-bg-dark.jpg');
 }
 
 body {

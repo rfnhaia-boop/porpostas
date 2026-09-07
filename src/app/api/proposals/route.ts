@@ -1,8 +1,11 @@
+import { parseCommercial, commercialTotals, commercialPaymentTerms, validateCommercial } from '@/lib/commercial';
+import { formatBRL } from '@/lib/money';
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
 import { normalizeProposalItems } from '@/lib/catalog';
 import { generatePublicToken } from '@/lib/token';
+import { mailProposalSent } from '@/lib/mailer';
 
 export async function GET() {
   const companyId = await getCurrentCompanyId();
@@ -11,7 +14,7 @@ export async function GET() {
     where: { companyId },
     orderBy: { createdAt: 'desc' },
     omit: { contractData: true },
-    include: { items: true, client: true, payments: { omit: { receiptData: true } } },
+    include: { items: true, client: true, reviews: { orderBy: { month: "desc" } }, progressUpdates: { orderBy: { month: "desc" }, include: { deliveries: { orderBy: { createdAt: "asc" } } } }, blocks: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] }, payments: { omit: { receiptData: true }, include: { entries: { omit: { receiptData: true }, orderBy: { createdAt: "asc" } } } } },
   });
   return Response.json(proposals);
 }
@@ -33,7 +36,15 @@ export async function POST(request: NextRequest) {
     clientId = client.id;
   }
 
-  const total = items.reduce((sum, it) => sum + it.price, 0);
+  let commercial;
+  try {
+    commercial = parseCommercial(body.commercial);
+    if (commercial) {
+      validateCommercial(Array.isArray(body.items) ? body.items : [], commercial, body.status === 'sent');
+      validateCommercial(items, commercial, body.status === 'sent');
+    }
+  } catch (e) { return Response.json({ error: e instanceof Error ? e.message : 'Modelo inválido.' }, { status: 400 }); }
+  const total = commercial ? commercialTotals(items, commercial).total : items.reduce((sum, it) => sum + it.price, 0);
   const status = body?.status === 'sent' ? 'sent' : 'draft';
   const accessPhrase =
     typeof body?.accessPhrase === 'string' && body.accessPhrase.trim()
@@ -47,14 +58,16 @@ export async function POST(request: NextRequest) {
     try {
       proposal = await prisma.proposal.create({
         data: {
+          ...(commercial ? { commercial } : {}),
           companyId,
           clientId,
           publicToken: generatePublicToken(),
           proposalNumber: typeof body?.proposalNumber === 'string' ? body.proposalNumber : 'PRJ-0000',
+          title: typeof body?.title === 'string' ? body.title.slice(0, 120) : '',
           template: typeof body?.template === 'string' ? body.template : 'cyber',
           validityDays: typeof body?.validityDays === 'string' ? body.validityDays : '15 Dias',
           timeline: typeof body?.timeline === 'string' ? body.timeline : '30 dias úteis',
-          paymentTerms: typeof body?.paymentTerms === 'string' ? body.paymentTerms : '',
+          paymentTerms: commercial ? commercialPaymentTerms(items, commercial, formatBRL) : typeof body?.paymentTerms === 'string' ? body.paymentTerms : '',
           notes: typeof body?.notes === 'string' ? body.notes : '',
           accessPhrase,
           total,
@@ -62,7 +75,7 @@ export async function POST(request: NextRequest) {
           items: { create: items },
         },
         omit: { contractData: true },
-        include: { items: true, client: true, payments: { omit: { receiptData: true } } },
+        include: { items: true, client: true, reviews: { orderBy: { month: "desc" } }, progressUpdates: { orderBy: { month: "desc" }, include: { deliveries: { orderBy: { createdAt: "asc" } } } }, blocks: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] }, payments: { omit: { receiptData: true }, include: { entries: { omit: { receiptData: true }, orderBy: { createdAt: "asc" } } } } },
       });
       break;
     } catch (err) {
@@ -71,5 +84,7 @@ export async function POST(request: NextRequest) {
       if (!isUniqueClash || attempt >= 3) throw err;
     }
   }
+  if (proposal.status === 'sent') void mailProposalSent(proposal.id);
+
   return Response.json(proposal, { status: 201 });
 }

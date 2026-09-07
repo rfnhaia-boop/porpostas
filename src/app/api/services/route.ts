@@ -24,13 +24,16 @@ export async function POST(request: NextRequest) {
   const service = await prisma.service.create({
     data: {
       companyId,
+      billingType: (fields.billingType as string) ?? 'once',
       name: (fields.name as string) || body.name,
       description: (fields.description as string) ?? '',
       kind: (fields.kind as string) ?? 'service',
       unitLabel: (fields.unitLabel as string) ?? 'projeto',
       price: (fields.price as number) ?? 0,
       details: (fields.details as string[]) ?? [],
+      defaultStages: (fields.defaultStages as string[]) ?? [],
       defaultTimeline: (fields.defaultTimeline as string) ?? '',
+      minCommitment: (fields.minCommitment as string) ?? '',
     },
   });
   return Response.json(service, { status: 201 });

@@ -18,6 +18,7 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Fora: rotas de API (fazem seu próprio 401), assets do Next, e a proposta pública /p/<token>.
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|p/).*)'],
+  // Fora do guard do dono: rotas de API (fazem seu próprio 401), assets do Next,
+  // a proposta pública /p/<token> e o Portal do Cliente /portal (auth própria via client_session).
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|p/|portal).*)'],
 };
