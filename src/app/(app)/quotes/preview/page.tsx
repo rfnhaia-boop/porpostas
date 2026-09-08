@@ -2,7 +2,7 @@
 
 import { commercialTotals, commercialPaymentTerms, validateCommercial } from '@/lib/commercial';
 import { CommercialChoices } from '@/components/CommercialChoices';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { usePlatformStore } from '@/store/usePlatformStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -97,11 +97,16 @@ export default function PreviewPage() {
   });
 
   // Cria a proposta na 1ª vez; nas seguintes atualiza os campos, os itens e o status.
+  // Evita criar 2 propostas se dois botões (salvar / enviar / visualizar como cliente)
+  // dispararem antes do primeiro `create` resolver — o 2º espera o mesmo request.
+  const createInFlight = useRef<Promise<{ id: string; publicToken: string }> | null>(null);
+
   const persistProposal = async (status: 'draft' | 'sent') => {
     if (quoteDraft.commercial) validateCommercial(commercialItems, quoteDraft.commercial, status === 'sent');
     if (saved) {
       await api.proposals.update(saved.id, {
         commercial: quoteDraft.commercial,
+        clientId: quoteDraft.clientId,
         proposalNumber: quoteDraft.proposalNumber,
         title: quoteDraft.title,
         template: quoteDraft.template,
@@ -116,11 +121,16 @@ export default function PreviewPage() {
       });
       return saved;
     }
-    const created = await api.proposals.create({ ...buildPayload(), status });
-    const next = { id: created.id, publicToken: created.publicToken };
-    setSaved(next);
-    updateQuoteDraft({ proposalId: next.id, publicToken: next.publicToken });
-    return next;
+    if (!createInFlight.current) {
+      createInFlight.current = api.proposals.create({ ...buildPayload(), status }).then((created) => {
+        const next = { id: created.id, publicToken: created.publicToken };
+        setSaved(next);
+        updateQuoteDraft({ proposalId: next.id, publicToken: next.publicToken });
+        return next;
+      });
+      createInFlight.current.catch(() => { createInFlight.current = null; });
+    }
+    return createInFlight.current;
   };
 
   const handleSaveProposal = async () => {

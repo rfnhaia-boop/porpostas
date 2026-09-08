@@ -118,6 +118,11 @@ export default function ProposalsPage() {
         unitLabel: it.unitLabel ?? 'un',
         quantity: it.quantity ?? 1,
         unitPrice: it.unitPrice ?? it.price,
+        billingType: it.billingType,
+        optional: it.optional,
+        selected: it.selected,
+        packageId: it.packageId,
+        order: it.order,
       })),
     });
     router.push('/quotes/preview');

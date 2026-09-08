@@ -331,6 +331,7 @@ export const api = {
           accessPhrase: string | null;
           maxAccesses: number;
           requiresSignedContract: boolean;
+          clientId: string | null;
           items: ItemInput[];
         } & Pick<
           Proposal,

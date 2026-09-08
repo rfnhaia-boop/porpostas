@@ -27,8 +27,10 @@ export async function recomputePaymentStatus(paymentId: string): Promise<void> {
   else if (hasReceiptPending) status = 'awaiting_verification';
   else status = 'pending'; // sem recibo ainda (mesmo com parcelas "planejadas")
 
-  // Não rebaixa um 'paid' forçado manualmente pelo dono.
-  if (status === 'pending' && payment.status === 'paid') return;
+  // Não rebaixa um 'paid' que o dono já confirmou — nem pra 'pending' nem pra
+  // 'awaiting_verification' se o cliente mexer nos recibos depois. Pra desfazer,
+  // o dono usa o toggle explícito no painel.
+  if (payment.status === 'paid' && status !== 'paid') return;
 
   await prisma.payment.update({
     where: { id: paymentId },

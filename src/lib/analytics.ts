@@ -15,6 +15,21 @@ function monthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/**
+ * `dueDate` é uma data pura, gravada como meia-noite UTC. Comparar com `new Date()`
+ * local jogava um vencimento de HOJE pra "1 dia atrás" no fuso do Brasil (UTC−3).
+ * Aqui a diferença é calculada só entre os DIAS de calendário, sem hora/fuso.
+ */
+function dueDaysFromToday(dueIso: string | null | undefined): number | null {
+  if (!dueIso) return null;
+  const due = new Date(dueIso);
+  if (Number.isNaN(due.getTime())) return null;
+  const dueDay = Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate());
+  const now = new Date();
+  const todayDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((dueDay - todayDay) / 86_400_000);
+}
+
 function monthLabel(d: Date) {
   const s = d.toLocaleDateString('pt-BR', { month: 'short' });
   return s.replace('.', '');
@@ -67,9 +82,7 @@ export interface PaymentHealth {
 }
 
 export function paymentHealth(proposals: Proposal[]): PaymentHealth {
-  const now = new Date();
-  const thisKey = monthKey(now);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const thisKey = monthKey(new Date());
   let toReceive = 0;
   let overdue = 0;
   let overdueCount = 0;
@@ -87,8 +100,8 @@ export function paymentHealth(proposals: Proposal[]): PaymentHealth {
       const remaining = Math.max(0, pay.amount - verified);
       awaitingCount += entries.filter((e) => e.status === 'awaiting_verification').length;
       if (remaining <= 0) continue;
-      const due = pay.dueDate ? new Date(pay.dueDate) : null;
-      if (due && due < today) {
+      const d = dueDaysFromToday(pay.dueDate);
+      if (d !== null && d < 0) {
         overdue += remaining;
         overdueCount += 1;
       } else {
@@ -188,8 +201,6 @@ export interface UpcomingBill {
   overdue: boolean;
 }
 export function upcomingBills(proposals: Proposal[], limit = 6): UpcomingBill[] {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const out: UpcomingBill[] = [];
   for (const p of proposals) {
     for (const pay of p.payments) {
@@ -199,8 +210,7 @@ export function upcomingBills(proposals: Proposal[], limit = 6): UpcomingBill[] 
         .reduce((s, e) => s + e.amount, 0);
       const remaining = Math.max(0, pay.amount - verified);
       if (remaining <= 0) continue;
-      const due = pay.dueDate ? new Date(pay.dueDate) : null;
-      const daysUntil = due ? Math.round((due.getTime() - today.getTime()) / 86_400_000) : null;
+      const daysUntil = dueDaysFromToday(pay.dueDate);
       out.push({
         id: pay.id,
         project: p.title?.trim() || `#${p.proposalNumber}`,

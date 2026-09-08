@@ -21,8 +21,10 @@ const STATUS_LABEL: Record<string, { text: string; className: string }> = {
   delivered: { text: 'Entregue', className: 'text-green-500 border-green-500/30 bg-green-500/10' },
 };
 
+// respondedAt / paidAt são timestamps reais — formata no fuso local (não UTC,
+// senão à noite mostra o dia anterior).
 function fmtDate(iso: string | null) {
-  return iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : null;
+  return iso ? new Date(iso).toLocaleDateString('pt-BR') : null;
 }
 
 export default function ApprovedProposalPage({ params }: { params: Promise<{ id: string }> }) {
@@ -76,6 +78,11 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
         unitLabel: it.unitLabel ?? 'un',
         quantity: it.quantity ?? 1,
         unitPrice: it.unitPrice ?? it.price,
+        billingType: it.billingType,
+        optional: it.optional,
+        selected: it.selected,
+        packageId: it.packageId,
+        order: it.order,
       })),
     });
     updateQuoteDraft({

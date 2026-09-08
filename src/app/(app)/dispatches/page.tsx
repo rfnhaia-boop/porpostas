@@ -19,7 +19,7 @@ export default function DispatchesPage() {
     <div className="p-4 sm:p-6 lg:p-12 min-h-screen text-white">
       <PageHeader
         title="Motor de Disparo"
-        description="Ajuste os textos e gatilhos de comunicação que a NEX envia para os seus clientes"
+        description="Ajuste os textos e gatilhos de comunicação que o Fechô envia para os seus clientes"
         action={
           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
             <Send size={14} className="text-[#FF6A00]" /> Configuração Global

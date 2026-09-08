@@ -51,8 +51,23 @@ function brl(cents: number): string {
 function today(): string {
   return new Date().toISOString().split("T")[0];
 }
+// Converte o que o cliente digitou em centavos, tolerando os dois formatos:
+//  "1.500,50" (pt-BR) e "1500.50" (ponto decimal). Antes, "1500.50" virava R$150.050.
 function parseCents(v: string): number {
-  return Math.round(Number(v.replace(/\./g, "").replace(",", ".")) * 100);
+  let s = String(v ?? "").trim().replace(/[R$\s]/g, "");
+  if (!s) return NaN;
+  if (s.includes(",")) {
+    // vírgula = decimal; pontos = milhar
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    const dots = (s.match(/\./g) || []).length;
+    const lastDot = s.lastIndexOf(".");
+    const decimals = lastDot >= 0 ? s.length - lastDot - 1 : 0;
+    // um único ponto com 1–2 casas depois = decimal ("1500.5" / "1500.50"); senão é milhar
+    if (!(dots === 1 && decimals >= 1 && decimals <= 2)) s = s.replace(/\./g, "");
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 100) : NaN;
 }
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");

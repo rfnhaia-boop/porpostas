@@ -28,9 +28,20 @@ export async function readUploadedFile(
   }
   const data = Buffer.from(await file.arrayBuffer());
   return {
-    fileName: file.name || 'arquivo',
+    fileName: (file.name || 'arquivo').replace(/[\r\n]/g, ' ').trim().slice(0, 200) || 'arquivo',
     mimeType: file.type || 'application/octet-stream',
     size: file.size,
     data,
   };
+}
+
+/**
+ * Monta um header Content-Disposition seguro. O nome do arquivo vem de upload do
+ * usuário — sem sanitizar, um nome com aspas ou CR/LF permite injeção de header.
+ */
+export function contentDisposition(name: string | null, fallback: string, disposition: 'inline' | 'attachment' = 'inline'): string {
+  const raw = (name || fallback).replace(/[\r\n]/g, ' ').trim() || fallback;
+  const ascii = raw.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_').slice(0, 180);
+  const utf8 = encodeURIComponent(raw).slice(0, 300);
+  return `${disposition}; filename="${ascii}"; filename*=UTF-8''${utf8}`;
 }

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
-import { readUploadedFile } from '@/lib/fileUpload';
+import { readUploadedFile, contentDisposition } from '@/lib/fileUpload';
 
 type Ctx = { params: Promise<{ id: string; paymentId: string }> };
 
@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
   return new Response(new Uint8Array(payment.receiptData), {
     headers: {
       'Content-Type': payment.receiptMimeType || 'application/octet-stream',
-      'Content-Disposition': `inline; filename="${payment.receiptFileName || 'comprovante'}"`,
+      'Content-Disposition': contentDisposition(payment.receiptFileName, 'comprovante'),
     },
   });
 }

@@ -20,7 +20,7 @@ export function EmailTemplatesSettings() {
           Automação de E-mails
         </h3>
         <p className="mx-auto sm:mx-0 max-w-lg text-sm text-white/50 leading-relaxed font-light">
-          A NEX dispara comunicações transacionais em momentos-chave da negociação. 
+          O Fechô dispara comunicações transacionais em momentos-chave da negociação. 
           Você pode personalizar a linguagem de cada evento e usar variáveis de contexto como{' '}
           <code className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-cyan-400 font-mono text-[10px]">{'{{ variável }}'}</code>.
         </p>
@@ -54,6 +54,10 @@ function TemplateCard({ row }: { row: EmailTemplateRow }) {
   const [body, setBody] = useState(row.body);
 
   const dirty = subject !== row.subject || title !== row.title || body !== row.body;
+
+  // Variáveis {{x}} que a pessoa usou mas não existem neste e-mail — sairiam vazias.
+  const usedVars = Array.from(`${subject} ${title} ${body}`.matchAll(/\{\{\s*(\w+)\s*\}\}/g)).map((m) => m[1]);
+  const unknownVars = Array.from(new Set(usedVars.filter((v) => !row.vars.includes(v))));
 
   const save = useMutation({
     mutationFn: (data: Partial<Pick<EmailTemplateRow, 'subject' | 'title' | 'body' | 'enabled'>>) =>
@@ -151,6 +155,12 @@ function TemplateCard({ row }: { row: EmailTemplateRow }) {
                     Variáveis: {row.vars.map((v) => `{{${v}}}`).join(' ')}
                   </span>
                 </div>
+
+                {unknownVars.length > 0 && (
+                  <p className="text-[10px] font-bold text-amber-400">
+                    Variável não reconhecida: {unknownVars.map((v) => `{{${v}}}`).join(' ')} — vai sair em branco no e-mail.
+                  </p>
+                )}
 
                 <div className="flex items-center gap-3 pt-2">
                   <button

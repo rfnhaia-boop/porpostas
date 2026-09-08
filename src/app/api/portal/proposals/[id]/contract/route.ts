@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getClientSession } from "@/lib/clientAuth";
+import { contentDisposition } from "@/lib/fileUpload";
 
 // O cliente baixa/visualiza o contrato anexado da própria proposta.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +29,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new Response(new Uint8Array(proposal.contractData), {
     headers: {
       "Content-Type": proposal.contractMimeType || "application/octet-stream",
-      "Content-Disposition": `inline; filename="${proposal.contractFileName || "contrato"}"`,
+      "Content-Disposition": contentDisposition(proposal.contractFileName, "contrato"),
     },
   });
 }

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentCompanyId } from "@/lib/company";
 import { recomputePaymentStatus } from "@/lib/paymentStatus";
+import { contentDisposition } from "@/lib/fileUpload";
 import { mailPaymentConfirmed } from "@/lib/mailer";
 
 type Ctx = { params: Promise<{ id: string; paymentId: string; entryId: string }> };
@@ -51,7 +52,7 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
   return new Response(new Uint8Array(entry.receiptData), {
     headers: {
       "Content-Type": entry.receiptMimeType || "application/octet-stream",
-      "Content-Disposition": `inline; filename="${entry.receiptFileName || "recibo"}"`,
+      "Content-Disposition": contentDisposition(entry.receiptFileName, "recibo"),
     },
   });
 }

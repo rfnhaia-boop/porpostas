@@ -12,9 +12,15 @@ const METHOD_LABEL: Record<string, string> = {
   outro: "Outro",
 };
 
-function fmtDate(v: string | Date | null | undefined): string {
+// Data pura (o dia que o cliente escolheu) — formata em UTC pra não voltar um dia.
+function fmtDay(v: string | Date | null | undefined): string {
   if (!v) return "—";
   return new Date(v).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+// Timestamp real (quitação confirmada pelo sistema) — fuso local.
+function fmtStamp(v: string | Date | null | undefined): string {
+  if (!v) return "—";
+  return new Date(v).toLocaleDateString("pt-BR");
 }
 function brl(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -66,7 +72,7 @@ export function HistoricoView({ groups }: { groups: any[] }) {
                     <div>
                       <h3 className="text-lg font-black text-[var(--foreground)]">{p.label}</h3>
                       <p className="text-xs text-[var(--text-muted)]">
-                        {brl(p.amount)} · quitado em {fmtDate(p.paidAt)}
+                        {brl(p.amount)} · quitado em {fmtStamp(p.paidAt)}
                       </p>
                     </div>
                     <span className="flex items-center gap-1.5 text-green-500 text-[10px] font-black uppercase tracking-widest">
@@ -85,7 +91,7 @@ export function HistoricoView({ groups }: { groups: any[] }) {
                             <span className="font-bold">{brl(e.amount)}</span>
                             <span className="text-[var(--text-muted)]">
                               {" "}
-                              · {METHOD_LABEL[e.method] || "Outro"} · {fmtDate(e.paidOn)}
+                              · {METHOD_LABEL[e.method] || "Outro"} · {fmtDay(e.paidOn)}
                             </span>
                           </span>
                           {e.receiptFileName && (

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
-import { readUploadedFile } from '@/lib/fileUpload';
+import { readUploadedFile, contentDisposition } from '@/lib/fileUpload';
 import { mailProjectStarted } from '@/lib/mailer';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -49,7 +49,7 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
   return new Response(new Uint8Array(proposal.contractData), {
     headers: {
       'Content-Type': proposal.contractMimeType || 'application/octet-stream',
-      'Content-Disposition': `inline; filename="${proposal.contractFileName || 'contrato'}"`,
+      'Content-Disposition': contentDisposition(proposal.contractFileName, 'contrato'),
     },
   });
 }

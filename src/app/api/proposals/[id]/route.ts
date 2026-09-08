@@ -49,6 +49,17 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     const p = typeof body.accessPhrase === 'string' ? body.accessPhrase.trim() : '';
     data.accessPhrase = p ? p.slice(0, 100) : null;
   }
+  // Trocar o cliente da proposta — só enquanto ela ainda não foi aceita, e o
+  // cliente tem que ser da mesma empresa.
+  if ('clientId' in body && !['approved', 'in_progress', 'delivered'].includes(existing.status)) {
+    if (body.clientId === null || body.clientId === '') {
+      data.clientId = null;
+    } else if (typeof body.clientId === 'string') {
+      const client = await prisma.client.findFirst({ where: { id: body.clientId, companyId } });
+      if (!client) return Response.json({ error: 'Cliente inválido.' }, { status: 400 });
+      data.clientId = client.id;
+    }
+  }
   // Trava de contrato: só dá pra ligar/desligar enquanto a proposta ainda não foi aceita.
   if (typeof body.requiresSignedContract === 'boolean') {
     if (['approved', 'in_progress', 'delivered'].includes(existing.status)) {
