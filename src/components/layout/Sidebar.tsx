@@ -3,7 +3,7 @@
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, FileText, Settings, PlusCircle, Archive, FolderCheck, Send, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, PlusCircle, Archive, FolderCheck, Send, LogOut, X, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationsBell } from './NotificationsBell';
@@ -22,6 +22,7 @@ export const Sidebar = ({ open = false, onClose }: { open?: boolean; onClose?: (
 
   const links = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/havi', label: 'Havi', icon: Sparkles, img: '/havi-icon.webp' },
     { href: '/clients', label: 'Meus Clientes', icon: Users },
     { href: '/services', label: 'Serviços', icon: FileText },
     { href: '/proposals', label: 'Histórico', icon: Archive },
@@ -74,7 +75,12 @@ export const Sidebar = ({ open = false, onClose }: { open?: boolean; onClose?: (
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                <Icon size={20} className="relative z-10" />
+                {'img' in link && link.img ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={link.img} alt="" className="relative z-10 h-5 w-5 rounded-full" />
+                ) : (
+                  <Icon size={20} className="relative z-10" />
+                )}
                 <span className="font-semibold uppercase tracking-widest text-[10px] relative z-10">{link.label}</span>
               </div>
             </Link>

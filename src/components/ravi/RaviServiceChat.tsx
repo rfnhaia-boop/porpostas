@@ -42,7 +42,14 @@ const STARTERS = [
   { icon: HelpCircle, title: 'Me ajuda a montar', desc: 'Não sei por onde começar', text: 'Me ajuda a montar um serviço do zero, pergunta o que precisar.' },
 ];
 
-export function RaviServiceChat({ onClose }: { onClose: () => void }) {
+export function RaviServiceChat({
+  onClose,
+  variant = 'modal',
+}: {
+  onClose: () => void;
+  variant?: 'modal' | 'page';
+}) {
+  const isPage = variant === 'page';
   const addSavedService = usePlatformStore((s) => s.addSavedService);
   const queryClient = useQueryClient();
 
@@ -186,16 +193,16 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
   );
   const mmss = `${String(Math.floor(recSecs / 60)).padStart(2, '0')}:${String(recSecs % 60).padStart(2, '0')}`;
 
-  return (
-    <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 sm:p-6 backdrop-blur-sm"
-      onClick={onClose}
-    >
+  const panel = (
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative flex h-full max-h-[860px] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#050505]/95 shadow-[0_20px_70px_rgba(0,0,0,0.8)] backdrop-blur-3xl"
+        className={`relative flex flex-col overflow-hidden border border-white/[0.08] bg-[#050505]/95 shadow-[0_20px_70px_rgba(0,0,0,0.8)] backdrop-blur-3xl ${
+          isPage
+            ? 'h-full w-full rounded-[1.5rem]'
+            : 'h-full max-h-[860px] w-full max-w-4xl rounded-[2rem]'
+        }`}
       >
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.05] px-5 sm:px-8">
@@ -386,6 +393,15 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
           </p>
         </div>
       </motion.div>
+  );
+
+  if (isPage) return panel;
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 sm:p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {panel}
     </div>
   );
 }
