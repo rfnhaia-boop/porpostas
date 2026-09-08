@@ -1,49 +1,51 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { loginClientByEmail } from "@/lib/clientAuth";
-import bcrypt from "bcryptjs"; // Assuming bcrypt is installed or we can use another hash
+import { checkPortalClaim } from "@/lib/portalClaim";
+import bcrypt from "bcryptjs";
 import { extractToken } from "@/lib/slug";
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token: rawToken } = await params;
     const token = extractToken(rawToken);
-    
-    const body = await req.json();
-    const { email, phone, password } = body;
 
-    if (!email || !password) {
+    const body = await req.json().catch(() => null);
+    const email = typeof body?.email === "string" ? body.email : "";
+    const phone = typeof body?.phone === "string" ? body.phone.trim().slice(0, 40) : "";
+    const password = typeof body?.password === "string" ? body.password : "";
+
+    if (!email.trim() || !password) {
       return NextResponse.json({ error: "Email e senha são obrigatórios." }, { status: 400 });
     }
-
-    // 1. Find the proposal
-    console.log("[DEBUG] rawToken:", rawToken);
-    console.log("[DEBUG] extracted token:", token);
-    const proposal = await prisma.proposal.findUnique({
-      where: { publicToken: token },
-      include: { client: true }
-    });
-    console.log("[DEBUG] proposal found:", proposal?.id, "clientId:", proposal?.clientId);
-
-    if (!proposal || !proposal.clientId) {
-      return NextResponse.json({ error: "Proposta inválida ou sem cliente vinculado." }, { status: 404 });
+    if (password.length < 8) {
+      return NextResponse.json({ error: "A senha precisa de pelo menos 8 caracteres." }, { status: 400 });
     }
 
-    // 2. Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // 3. Update Client
+    // Trava anti-sequestro: proposta aceita, palavra-chave conferida (se houver),
+    // e acesso ainda não configurado pra outra identidade.
+    const gate = await checkPortalClaim(token, normalizedEmail);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
     await prisma.client.update({
-      where: { id: proposal.clientId },
-      data: { email: normalizedEmail, phone, passwordHash },
+      where: { id: gate.client.id },
+      data: {
+        email: normalizedEmail,
+        phone,
+        passwordHash,
+        portalClaimedAt: gate.client.portalClaimedAt ?? new Date(),
+      },
     });
 
-    // 4. Log in the client (identidade = e-mail)
     await loginClientByEmail(normalizedEmail);
-
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Erro ao configurar conta." }, { status: 500 });
+  } catch (err) {
+    console.error("[setup-account]", err);
+    return NextResponse.json({ error: "Erro ao configurar conta." }, { status: 500 });
   }
 }

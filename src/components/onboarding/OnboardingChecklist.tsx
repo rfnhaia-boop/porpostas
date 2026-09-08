@@ -166,7 +166,7 @@ export function OnboardingChecklist() {
           return (
             <li
               key={step.label}
-              className={`flex items-center gap-3 rounded-2xl border p-3 sm:p-4 transition-colors ${
+              className={`flex flex-wrap items-center gap-3 rounded-2xl border p-3 sm:p-4 transition-colors ${
                 step.done
                   ? 'border-transparent opacity-55'
                   : isNext
@@ -184,7 +184,7 @@ export function OnboardingChecklist() {
                 <Check size={13} strokeWidth={3} />
               </span>
 
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-40">
                 <p
                   className={`text-sm font-bold ${
                     step.done
@@ -202,7 +202,7 @@ export function OnboardingChecklist() {
               {!step.done && (
                 <button
                   onClick={() => ('action' in step && step.action ? step.action() : router.push(step.to))}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                  className={`flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-start ${
                     isNext
                       ? 'bg-[#FF6A00] text-[#0A0A0A] hover:opacity-90'
                       : 'border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--foreground)]'

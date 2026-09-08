@@ -38,16 +38,12 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // 1º signup adota a Company órfã (sem usuários) que já existe; os demais criam empresa nova.
-          const orphan = await prisma.company.findFirst({
-            where: { users: { none: {} } },
-            orderBy: { createdAt: 'asc' },
+          // Cada cadastro cria a PRÓPRIA empresa, sempre vazia. Nunca adota empresa
+          // existente — adotar uma "órfã" deixava qualquer signup assumir os dados
+          // (clientes, propostas, contratos) de uma conta sem dono.
+          const company = await prisma.company.create({
+            data: { name: user.name || 'Minha Empresa', email: user.email },
           });
-          const company =
-            orphan ??
-            (await prisma.company.create({
-              data: { name: user.name || 'Minha Empresa', email: user.email },
-            }));
           return { data: { ...user, companyId: company.id } };
         },
         after: async (user) => {

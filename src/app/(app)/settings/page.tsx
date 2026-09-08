@@ -1,27 +1,334 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlatformStore, CompanyInfo } from '@/store/usePlatformStore';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { InputExpansivo } from '@/components/ui/InputExpansivo';
 import { PixQRCode } from '@/components/PixQRCode';
 import { buildPixBrCode, normalizePixKey } from '@/lib/pixBrCode';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Loader2, MailWarning } from 'lucide-react';
+import { Building2, CheckCircle2, ImageUp, Loader2, MailWarning, QrCode, Trash2 } from 'lucide-react';
 
-function EmailVerifyStatus({ email, verified }: { email: string; verified: boolean }) {
-  const [sent, setSent] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
-  if (!email.trim()) return null;
+const PIX_KEY_TYPES: { value: CompanyInfo['pixKeyType']; label: string }[] = [
+  { value: '', label: 'Selecione…' },
+  { value: 'cpf', label: 'CPF' },
+  { value: 'cnpj', label: 'CNPJ' },
+  { value: 'email', label: 'E-mail' },
+  { value: 'phone', label: 'Telefone' },
+  { value: 'random', label: 'Chave aleatória' },
+];
 
-  if (verified) {
-    return (
-      <p className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-green-500">
-        <CheckCircle2 size={13} /> E-mail confirmado
-      </p>
-    );
-  }
+/** Campo de texto padrão da tela. */
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  type = 'text',
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+  type?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+        {label}
+      </span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--panel-bg)] px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[#FF6A00]"
+      />
+      {hint && <span className="mt-1.5 block text-xs text-[var(--text-muted)]">{hint}</span>}
+      {children}
+    </label>
+  );
+}
+
+function Section({
+  icon: Icon,
+  title,
+  desc,
+  children,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  title: string;
+  desc?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--panel-bg)]/40 p-5 sm:p-6">
+      <div className="mb-5 flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/10 text-[#FF6A00]">
+          <Icon size={16} />
+        </span>
+        <div>
+          <h2 className="text-sm font-black uppercase tracking-widest text-[var(--foreground)]">{title}</h2>
+          {desc && <p className="mt-0.5 text-xs text-[var(--text-muted)]">{desc}</p>}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+export default function SettingsPage() {
+  const { companyInfo, updateCompanyInfo, hydrated } = usePlatformStore();
+
+  const [form, setForm] = useState<CompanyInfo>(companyInfo);
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<Partial<CompanyInfo>>({});
+  const dirty = useRef(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoErr, setLogoErr] = useState<string | null>(null);
+
+  const flush = useCallback(async () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    const patch = pending.current;
+    if (!Object.keys(patch).length) return;
+    pending.current = {};
+    try {
+      await updateCompanyInfo(patch);
+      // Nada mais pendente → volta a aceitar sincronização vinda do banco.
+      if (!Object.keys(pending.current).length) dirty.current = false;
+      setStatus('saved');
+      setTimeout(() => setStatus((s) => (s === 'saved' ? 'idle' : s)), 1500);
+    } catch {
+      setStatus('idle');
+    }
+  }, [updateCompanyInfo]);
+
+  // Sincroniza o form quando os dados do banco chegam — só enquanto o usuário não mexeu.
+  useEffect(() => {
+    if (!dirty.current) setForm(companyInfo);
+  }, [companyInfo]);
+
+  // Salva o que estiver pendente ao sair da página (não perde a última edição).
+  useEffect(() => () => void flush(), [flush]);
+
+  const handleChange = (field: keyof CompanyInfo, value: string) => {
+    dirty.current = true;
+    setForm((prev) => ({ ...prev, [field]: value }));
+    pending.current = { ...pending.current, [field]: value };
+    setStatus('saving');
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 600);
+  };
+
+  const uploadLogo = async (file: File) => {
+    setLogoErr(null);
+    setLogoBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/company/logo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Falha no envio.');
+      dirty.current = true;
+      setForm((prev) => ({ ...prev, logoUrl: data.logoUrl }));
+      updateCompanyInfo({ logoUrl: data.logoUrl });
+    } catch (e) {
+      setLogoErr(e instanceof Error ? e.message : 'Falha no envio.');
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+
+  const removeLogo = async () => {
+    setLogoErr(null);
+    setLogoBusy(true);
+    try {
+      // Limpa o arquivo guardado no banco também (não só a URL).
+      await fetch('/api/company/logo', { method: 'DELETE' }).catch(() => {});
+      dirty.current = true;
+      setForm((prev) => ({ ...prev, logoUrl: '' }));
+      updateCompanyInfo({ logoUrl: '' });
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+
+  const emailVerified = companyInfo.emailVerified && form.email === companyInfo.email;
+
+  const pixReady =
+    !!form.pixKey.trim() &&
+    !!form.pixKeyType &&
+    !!(form.pixReceiverName || form.name).trim() &&
+    !!form.pixReceiverCity.trim();
+  const pixPreview = pixReady
+    ? buildPixBrCode({
+        key: normalizePixKey(form.pixKey, form.pixKeyType),
+        name: form.pixReceiverName || form.name,
+        city: form.pixReceiverCity,
+      })
+    : null;
+
+  return (
+    <div className="mx-auto min-h-screen max-w-2xl p-4 sm:p-6 lg:p-10">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <PageHeader title="Configurações" description="Identidade da empresa, marca e recebimento" />
+        <span
+          className={`mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${
+            status === 'saving' ? 'text-[var(--text-muted)]' : status === 'saved' ? 'text-green-500' : 'text-[var(--text-muted)]/60'
+          }`}
+        >
+          {status === 'saving' ? (
+            <>
+              <Loader2 size={12} className="animate-spin" /> Salvando…
+            </>
+          ) : status === 'saved' ? (
+            <>
+              <CheckCircle2 size={12} /> Salvo
+            </>
+          ) : hydrated ? (
+            'Salva automático'
+          ) : (
+            'Carregando…'
+          )}
+        </span>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 space-y-5"
+      >
+        <Section icon={Building2} title="Dados da empresa" desc="Aparecem no cabeçalho e no rodapé das propostas.">
+          <Field label="Razão social / Nome fantasia" value={form.name} onChange={(v) => handleChange('name', v)} placeholder="Minha Empresa" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="CNPJ / CPF" value={form.cnpj} onChange={(v) => handleChange('cnpj', v)} placeholder="00.000.000/0000-00" />
+            <Field label="Telefone / WhatsApp" value={form.phone} onChange={(v) => handleChange('phone', v)} placeholder="(11) 90000-0000" />
+          </div>
+          <div>
+            <Field label="E-mail corporativo" type="email" value={form.email} onChange={(v) => handleChange('email', v)} placeholder="contato@empresa.com" />
+            {form.email.trim() &&
+              (emailVerified ? (
+                <p className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-green-500">
+                  <CheckCircle2 size={13} /> E-mail confirmado
+                </p>
+              ) : (
+                <EmailVerifyPrompt />
+              ))}
+          </div>
+        </Section>
+
+        <Section icon={ImageUp} title="Marca" desc="Sua logo aparece nos e-mails automáticos e na área do cliente. Sem logo, entra o nome da empresa.">
+          <Field
+            label="Logo — URL da imagem"
+            value={form.logoUrl.startsWith('/api/company/logo') ? '' : form.logoUrl}
+            onChange={(v) => handleChange('logoUrl', v)}
+            placeholder="https://… (ou envie um arquivo abaixo)"
+          />
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadLogo(f);
+              e.target.value = '';
+            }}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={logoBusy}
+              className="flex items-center gap-2 rounded-full border border-[var(--border-color)] px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] transition hover:border-[#FF6A00] disabled:opacity-50"
+            >
+              {logoBusy ? <Loader2 size={12} className="animate-spin" /> : <ImageUp size={12} />}
+              {logoBusy ? 'Enviando…' : 'Enviar imagem (PNG/JPG/WEBP, até 1 MB)'}
+            </button>
+            {form.logoUrl.trim() && (
+              <button
+                type="button"
+                onClick={removeLogo}
+                disabled={logoBusy}
+                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition hover:text-red-400 disabled:opacity-50"
+              >
+                <Trash2 size={12} /> Remover
+              </button>
+            )}
+          </div>
+          {logoErr && <p className="text-[11px] font-bold text-red-400">{logoErr}</p>}
+          {form.logoUrl.trim() && (
+            <div className="inline-flex items-center gap-3 rounded-xl bg-white p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.logoUrl}
+                alt="Prévia da logo"
+                className="h-10 max-w-[220px] object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </Section>
+
+        <Section icon={QrCode} title="Recebimento PIX" desc="Configurado aqui, o QR Code aparece automático na área de todos os clientes.">
+          <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Tipo da chave</span>
+              <select
+                value={form.pixKeyType}
+                onChange={(e) => handleChange('pixKeyType', e.target.value)}
+                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--panel-bg)] px-3.5 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none transition-colors focus:border-[#FF6A00]"
+              >
+                {PIX_KEY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value} className="bg-[var(--background)] text-[var(--foreground)]">
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field label="Chave PIX" value={form.pixKey} onChange={(v) => handleChange('pixKey', v)} placeholder="chave copia-e-cola" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Nome do recebedor" value={form.pixReceiverName} onChange={(v) => handleChange('pixReceiverName', v)} placeholder="(usa o nome da empresa se vazio)" />
+            <Field label="Cidade do recebedor" value={form.pixReceiverCity} onChange={(v) => handleChange('pixReceiverCity', v)} placeholder="São Paulo" />
+          </div>
+          {pixPreview ? (
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-[var(--border-color)] bg-[var(--background)] p-5 sm:flex-row">
+              <PixQRCode payload={pixPreview} size={150} />
+              <div className="text-xs leading-relaxed text-[var(--text-muted)]">
+                <p className="mb-1 font-black uppercase tracking-widest text-[var(--foreground)]">Prévia</p>
+                <p>É assim que o cliente vê. Este QR não tem valor fixo — no portal, cada mês gera um QR com o valor daquele mês já embutido.</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              Preencha tipo, chave, nome e cidade pra ver a prévia do QR.
+            </p>
+          )}
+        </Section>
+
+        <p className="pt-2 text-center text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)]/60">
+          Cada campo salva sozinho alguns instantes depois que você para de digitar.
+        </p>
+      </motion.div>
+    </div>
+  );
+}
+
+function EmailVerifyPrompt() {
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
       <MailWarning size={13} />
@@ -43,318 +350,6 @@ function EmailVerifyStatus({ email, verified }: { email: string; verified: boole
       >
         {busy ? <Loader2 size={11} className="animate-spin" /> : sent ? 'Enviado — veja seu e-mail' : 'Enviar confirmação'}
       </button>
-    </div>
-  );
-}
-
-const PIX_KEY_TYPES: { value: CompanyInfo['pixKeyType']; label: string }[] = [
-  { value: '', label: 'Selecione…' },
-  { value: 'cpf', label: 'CPF' },
-  { value: 'cnpj', label: 'CNPJ' },
-  { value: 'email', label: 'E-mail' },
-  { value: 'phone', label: 'Telefone' },
-  { value: 'random', label: 'Chave aleatória' },
-];
-
-export default function SettingsPage() {
-  const { companyInfo, updateCompanyInfo, hydrated } = usePlatformStore();
-
-  const [form, setForm] = useState<CompanyInfo>(companyInfo);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<Partial<CompanyInfo>>({});
-  const dirty = useRef(false);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const [logoBusy, setLogoBusy] = useState(false);
-  const [logoErr, setLogoErr] = useState<string | null>(null);
-
-  const uploadLogo = async (file: File) => {
-    setLogoErr(null);
-    setLogoBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/company/logo', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Falha no envio.');
-      dirty.current = true;
-      setForm((prev) => ({ ...prev, logoUrl: data.logoUrl }));
-      updateCompanyInfo({ logoUrl: data.logoUrl });
-    } catch (e) {
-      setLogoErr(e instanceof Error ? e.message : 'Falha no envio.');
-    } finally {
-      setLogoBusy(false);
-    }
-  };
-
-  // Sincroniza o form quando os dados do banco chegam (só antes de o usuário mexer).
-  useEffect(() => {
-    if (!dirty.current) setForm(companyInfo);
-  }, [companyInfo]);
-
-  const handleChange = (field: keyof CompanyInfo, value: string) => {
-    dirty.current = true;
-    setForm((prev) => ({ ...prev, [field]: value }));
-    // Acumula as mudanças e salva o lote — assim editar vários campos rápido
-    // (ex: os 4 campos do PIX) não perde nenhum.
-    pending.current = { ...pending.current, [field]: value };
-    setStatus('saving');
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      const patch = pending.current;
-      pending.current = {};
-      try {
-        await updateCompanyInfo(patch);
-        setStatus('saved');
-        setTimeout(() => setStatus('idle'), 1500);
-      } catch {
-        setStatus('idle');
-      }
-    }, 600);
-  };
-
-  const dbLabel = status === 'saving' ? 'Salvando' : status === 'saved' ? 'Salvo' : hydrated ? 'Online' : 'Conectando';
-
-  const pixReady = !!form.pixKey.trim() && !!form.pixKeyType && !!(form.pixReceiverName || form.name).trim() && !!form.pixReceiverCity.trim();
-  const pixPreview = pixReady
-    ? buildPixBrCode({
-        key: normalizePixKey(form.pixKey, form.pixKeyType),
-        name: form.pixReceiverName || form.name,
-        city: form.pixReceiverCity,
-      })
-    : null;
-
-  return (
-    <div className="p-4 sm:p-6 lg:p-12 min-h-screen flex flex-col max-w-6xl mx-auto">
-      <PageHeader
-        title="Configurações do Sistema"
-        description="Parâmetros globais de emissão de propostas e identidade corporativa"
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mt-4">
-
-        {/* Left Column - Instructions/Context */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="relative overflow-hidden p-8 rounded-[2rem] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
-            style={{
-              background: "linear-gradient(135deg, rgba(30, 30, 30, 0.4) 0%, rgba(5, 5, 5, 0.6) 100%)",
-              backdropFilter: "blur(40px) saturate(200%)",
-            }}
-          >
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#FF6A00] to-[#FF8A3D]" />
-            <h3 className="text-xl font-black uppercase tracking-[0.2em] mb-4 text-white">Dados Institucionais</h3>
-            <p className="text-sm font-medium text-white/50 leading-relaxed">
-              Estas informações formam o cabeçalho e rodapé arquitetural dos seus orçamentos. Mantenha os dados rigorosamente atualizados para garantir a validade jurídica das propostas.
-            </p>
-          </div>
-
-          <div className="relative overflow-hidden p-8 rounded-[2rem] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.4)] hidden md:block"
-            style={{
-              background: "linear-gradient(135deg, rgba(30, 30, 30, 0.4) 0%, rgba(5, 5, 5, 0.6) 100%)",
-              backdropFilter: "blur(40px) saturate(200%)",
-            }}
-          >
-            <h3 className="text-lg font-black uppercase tracking-[0.2em] mb-4 text-white">Motor de Sincronização</h3>
-            <p className="text-xs font-medium text-white/50 leading-relaxed mb-6">
-              A arquitetura NEX salva seus dados no banco automaticamente. Cada alteração é persistida poucos instantes após você parar de digitar — nenhuma ação de salvamento manual é necessária.
-            </p>
-            <div className="w-full bg-black/40 border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-inner">
-               <span className="text-[10px] uppercase font-black text-white/40 tracking-[0.2em]">Status do DB</span>
-               <div className="flex gap-2 items-center">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.8)]" />
-                  <span className="text-[10px] uppercase font-black text-white tracking-[0.2em]">{dbLabel}</span>
-               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Form */}
-        <div className="lg:col-span-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full relative overflow-hidden p-8 md:p-14 rounded-[2.5rem] border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
-            style={{
-              background: "linear-gradient(135deg, rgba(30, 30, 30, 0.4) 0%, rgba(5, 5, 5, 0.6) 100%)",
-              backdropFilter: "blur(60px) saturate(200%)",
-              WebkitBackdropFilter: "blur(60px) saturate(200%)",
-            }}
-          >
-            {/* Reflexo superior do vidro */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
-            
-            {/* Glow Radial Interno */}
-            <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[120%] h-40 bg-[#FF6A00]/10 blur-[100px] rounded-[100%] pointer-events-none" />
-
-            <div className="relative z-10 space-y-12">
-              <InputExpansivo
-                label="Razão Social / Nome Fantasia"
-                value={form.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                className="text-2xl md:text-3xl text-white border-white/20 placeholder:text-white/20"
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <InputExpansivo
-                  label="CNPJ / CPF"
-                  value={form.cnpj}
-                  onChange={(e) => handleChange('cnpj', e.target.value)}
-                  className="text-xl md:text-2xl text-white border-white/20 placeholder:text-white/20"
-                />
-                <InputExpansivo
-                  label="Telefone / WhatsApp"
-                  value={form.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  className="text-xl md:text-2xl text-white border-white/20 placeholder:text-white/20"
-                />
-              </div>
-              <div>
-                <InputExpansivo
-                  label="E-mail Corporativo"
-                  value={form.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  className="text-xl md:text-2xl text-white border-white/20 placeholder:text-white/20"
-                />
-                <EmailVerifyStatus email={form.email} verified={companyInfo.emailVerified && form.email === companyInfo.email} />
-              </div>
-
-              <div>
-                <InputExpansivo
-                  label="Logo (URL da imagem)"
-                  value={form.logoUrl}
-                  onChange={(e) => handleChange('logoUrl', e.target.value)}
-                  className="text-lg md:text-xl text-white border-white/20 placeholder:text-white/20"
-                />
-                <p className="mt-3 text-[11px] font-semibold text-white/40 leading-relaxed max-w-lg">
-                  É a sua marca que aparece no topo dos e-mails automáticos e na área do cliente — não a da NEX. Sem logo, entra o nome da empresa.
-                </p>
-
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadLogo(f);
-                    e.target.value = '';
-                  }}
-                />
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={logoBusy}
-                    className="rounded-full border border-white/20 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white/70 transition hover:text-white disabled:opacity-50"
-                  >
-                    {logoBusy ? 'Enviando…' : 'Enviar imagem (PNG/JPG, até 1 MB)'}
-                  </button>
-                  {form.logoUrl.trim() && (
-                    <button
-                      type="button"
-                      onClick={() => handleChange('logoUrl', '')}
-                      className="text-[10px] font-black uppercase tracking-widest text-white/40 transition hover:text-white"
-                    >
-                      Remover
-                    </button>
-                  )}
-                </div>
-                {logoErr && <p className="mt-2 text-[11px] font-bold text-red-400">{logoErr}</p>}
-
-                {form.logoUrl.trim() && (
-                  <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white p-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={form.logoUrl}
-                      alt="Prévia do logo"
-                      className="h-10 max-w-[200px] object-contain"
-                      onError={(e) => { (e.currentTarget.style.display = 'none'); }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* --- PIX --- */}
-              <div className="pt-10 border-t border-white/10">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-2">
-                  PIX de Recebimento
-                </h3>
-                <p className="text-xs font-semibold text-white/50 leading-relaxed mb-8 max-w-lg">
-                  Configurado aqui, o QR Code aparece automaticamente na área de todos os clientes.
-                </p>
-
-                <div className="space-y-12">
-                  <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-12 items-end">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-3">
-                        Tipo da chave
-                      </label>
-                      <select
-                        value={form.pixKeyType}
-                        onChange={(e) => handleChange('pixKeyType', e.target.value)}
-                        className="w-full rounded-2xl bg-black/40 border border-white/10 px-4 py-3.5 text-sm font-bold text-white outline-none focus:border-[#FF6A00] transition-colors appearance-none cursor-pointer"
-                      >
-                        {PIX_KEY_TYPES.map((t) => (
-                          <option key={t.value} value={t.value} className="bg-[#0A0A0A] text-white">
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <InputExpansivo
-                      label="Chave PIX"
-                      value={form.pixKey}
-                      onChange={(e) => handleChange('pixKey', e.target.value)}
-                      className="text-xl md:text-3xl text-white border-white/20 placeholder:text-white/20"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <InputExpansivo
-                      label="Nome do recebedor"
-                      value={form.pixReceiverName}
-                      onChange={(e) => handleChange('pixReceiverName', e.target.value)}
-                      className="text-xl md:text-2xl text-white border-white/20 placeholder:text-white/20"
-                    />
-                    <InputExpansivo
-                      label="Cidade do recebedor"
-                      value={form.pixReceiverCity}
-                      onChange={(e) => handleChange('pixReceiverCity', e.target.value)}
-                      className="text-xl md:text-2xl text-white border-white/20 placeholder:text-white/20"
-                    />
-                  </div>
-
-                  {pixPreview ? (
-                    <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--background)] p-6 flex flex-col sm:flex-row items-center gap-6">
-                      <PixQRCode payload={pixPreview} size={160} />
-                      <div className="text-xs text-[var(--text-muted)] leading-relaxed">
-                        <p className="font-black uppercase tracking-widest text-[var(--foreground)] mb-1">
-                          Prévia
-                        </p>
-                        <p>
-                          É assim que o cliente vai ver. Este QR não tem valor fixo — no portal, cada
-                          mês gera um QR com o valor daquele mês já embutido.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                      Preencha tipo, chave, nome e cidade pra ver a prévia do QR.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-10 border-t border-[var(--border-color)] flex items-center justify-between">
-                <p className="text-[var(--text-muted)] font-semibold uppercase tracking-widest text-[10px] max-w-xs">Modificações salvas automaticamente no banco.</p>
-                <div className="text-[10px] uppercase font-black tracking-widest text-[#FF6A00] flex items-center gap-2">
-                  <span className="opacity-50">NEX</span> CRM ENGINE
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-      </div>
     </div>
   );
 }

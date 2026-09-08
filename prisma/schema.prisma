@@ -12,7 +12,9 @@ model Company {
   id        String   @id @default(cuid())
   name      String   @default("Minha Empresa")
   cnpj      String   @default("")
-  logoUrl   String   @default("")
+  logoUrl   String   @default("") // URL externa OU /api/company/logo?c=<id>&v=<hash> quando enviada abaixo
+  logoData        Bytes?  // logo enviada, guardada no banco (não some em redeploy)
+  logoContentType String? @default("")
   email     String   @default("")
   phone     String   @default("")
   // E-mail de contato confirmado — vira o Reply-To dos e-mails automáticos.
@@ -163,6 +165,9 @@ model Client {
   email        String   @default("")
   phone        String?  // Telefone para contato/WhatsApp
   passwordHash String?  // Senha para login no Portal do Cliente
+  // Marca quando o cliente configurou o acesso ao portal pela 1ª vez (senha ou Google).
+  // Depois disso, o acesso não pode ser reapontado pra outra identidade pelo link público.
+  portalClaimedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

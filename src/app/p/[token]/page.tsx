@@ -59,8 +59,17 @@ export default async function PublicProposalPage({ params }: Props) {
     }
   }
 
+  // Modelo comercial corrompido não pode derrubar a proposta inteira (500) —
+  // degrada pra proposta sem modelo comercial.
+  let parsedCommercial: QuoteView['commercial'] = null;
+  try {
+    parsedCommercial = parseCommercial(proposal.commercial);
+  } catch (err) {
+    console.error('[p/token] commercial inválido:', err);
+  }
+
   const q: QuoteView = {
-    commercial: parseCommercial(proposal.commercial),
+    commercial: parsedCommercial,
     company: {
       name: company.name,
       cnpj: company.cnpj,

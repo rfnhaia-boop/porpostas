@@ -91,7 +91,9 @@ export default function ClientsPage() {
               </div>
 
               <button
-                onClick={() => removeClient(client.id)}
+                onClick={() => {
+                  if (confirm(`Excluir o cliente "${client.name}"? As propostas ligadas a ele ficam sem cliente.`)) removeClient(client.id);
+                }}
                 className="absolute top-6 right-6 text-red-500/50 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
               >
                 <Trash2 size={20} />

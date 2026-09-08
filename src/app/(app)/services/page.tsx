@@ -354,7 +354,7 @@ export default function ServicesPage() {
                 <button
                   type="button"
                   aria-label="Remover"
-                  onClick={(e) => { e.stopPropagation(); removeSavedService(s.id); }}
+                  onClick={(e) => { e.stopPropagation(); if (confirm(`Remover "${s.name}" do catálogo?`)) removeSavedService(s.id); }}
                   className="opacity-0 transition-opacity group-hover:opacity-100 p-2 text-white/20 hover:text-red-400"
                 >
                   <Trash2 size={16} />

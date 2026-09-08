@@ -186,7 +186,9 @@ export default function ProposalsPage() {
                       <Pencil size={16} />
                     </button>
                     <button
-                      onClick={() => remove.mutate(proposal.id)}
+                      onClick={() => {
+                        if (confirm(`Excluir a proposta ${proposal.proposalNumber}? Itens, pagamentos e diário vão junto.`)) remove.mutate(proposal.id);
+                      }}
                       className="text-[var(--text-muted)] hover:text-red-500 transition-colors"
                       title="Excluir"
                     >
@@ -199,7 +201,7 @@ export default function ProposalsPage() {
                   <h3 className="font-black text-lg sm:text-xl uppercase tracking-tight mb-1 break-words line-clamp-2">
                     {proposal.client?.name || 'Cliente Removido'}
                   </h3>
-                  <p className="text-sm font-semibold text-[var(--text-muted)]">{proposal.items.length} Serviços Incluídos</p>
+                  <p className="text-sm font-semibold text-[var(--text-muted)]">{proposal.items.length} {proposal.items.length === 1 ? 'serviço incluído' : 'serviços incluídos'}</p>
                 </div>
 
                 {shareable && (

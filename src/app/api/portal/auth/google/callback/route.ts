@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { loginClientByEmail } from '@/lib/clientAuth';
+import { checkPortalClaim } from '@/lib/portalClaim';
 import { exchangeGoogleCode, fetchGoogleProfile } from '@/lib/portalGoogle';
 import { extractToken } from '@/lib/slug';
 
@@ -16,25 +17,29 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${req.nextUrl.origin}/api/portal/auth/google/callback`;
     const tokens = await exchangeGoogleCode(code, redirectUri);
     const profile = await fetchGoogleProfile(tokens.access_token);
-    if (!profile.email) throw new Error('Google não retornou e-mail.');
+    if (!profile.email || profile.email_verified === false) throw new Error('Google não retornou e-mail verificado.');
     const email = profile.email.trim().toLowerCase();
 
-    // Vindo da tela de "Sucesso!" (aceitar proposta) — vincula esse Google
-    // ao cliente da proposta, sem precisar criar senha.
+    // Vindo da tela de "Sucesso!" (aceitar proposta) — vincula esse Google ao
+    // cliente da proposta. Passa pela mesma trava anti-sequestro do setup por senha.
     if (state.startsWith('setup:')) {
       const proposalToken = extractToken(state.slice('setup:'.length));
-      const proposal = await prisma.proposal.findUnique({ where: { publicToken: proposalToken } });
-      if (!proposal || !proposal.clientId) {
-        return NextResponse.redirect(new URL('/portal/login?error=invalid_proposal', req.url));
+      const gate = await checkPortalClaim(proposalToken, email);
+      if (!gate.ok) {
+        const q = gate.status === 409 ? 'already_linked' : gate.status === 403 ? 'not_allowed' : 'invalid_proposal';
+        return NextResponse.redirect(new URL(`/portal/login?error=${q}`, req.url));
       }
-      await prisma.client.update({ where: { id: proposal.clientId }, data: { email } });
+      await prisma.client.update({
+        where: { id: gate.client.id },
+        data: { email, portalClaimedAt: gate.client.portalClaimedAt ?? new Date() },
+      });
       await loginClientByEmail(email);
       return NextResponse.redirect(new URL('/portal', req.url));
     }
 
-    // Login normal — basta existir algum cadastro de cliente com esse e-mail.
+    // Login normal — só entra quem já configurou o acesso ao portal com esse e-mail.
     const client = await prisma.client.findFirst({
-      where: { email: { equals: email, mode: 'insensitive' } },
+      where: { email: { equals: email, mode: 'insensitive' }, portalClaimedAt: { not: null } },
       select: { id: true },
     });
     if (!client) {

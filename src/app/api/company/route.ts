@@ -8,10 +8,13 @@ import { mailVerifyCompanyEmail } from '@/lib/mailer';
 export async function GET() {
   const company = await getCurrentCompany();
   if (!company) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
-  // haviOnboardingLog é a transcrição bruta da conversa de descoberta — não vai no payload geral.
-  const { emailVerifyToken: _t, haviOnboardingLog: _log, ...safe } = company;
+  // Blobs / segredos não vão no payload geral (haviOnboardingLog = transcrição bruta;
+  // logoData = binário da logo, servida por /api/company/logo).
+  const { emailVerifyToken: _t, haviOnboardingLog: _log, logoData: _ld, logoContentType: _lct, ...safe } = company;
   void _t;
   void _log;
+  void _ld;
+  void _lct;
   return Response.json(safe);
 }
 

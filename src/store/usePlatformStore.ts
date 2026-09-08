@@ -188,17 +188,24 @@ export const usePlatformStore = create<PlatformState>()(
       hydrated: false,
 
       hydrate: async () => {
-        const [company, clients, services] = await Promise.all([
-          api.company.get(),
-          api.clients.list(),
-          api.services.list(),
-        ]);
-        set({
-          companyInfo: toCompanyInfo(company),
-          clients: clients.map(toClient),
-          savedServices: services.map(toService),
-          hydrated: true,
-        });
+        try {
+          const [company, clients, services] = await Promise.all([
+            api.company.get(),
+            api.clients.list(),
+            api.services.list(),
+          ]);
+          set({
+            companyInfo: toCompanyInfo(company),
+            clients: clients.map(toClient),
+            savedServices: services.map(toService),
+            hydrated: true,
+          });
+        } catch (err) {
+          // Nunca deixar o app preso em "Carregando…" — libera a UI mesmo com falha
+          // (o usuário vê estados vazios em vez de tela travada) e loga pra diagnóstico.
+          console.error('[store] hydrate falhou:', err);
+          set({ hydrated: true });
+        }
       },
 
       updateCompanyInfo: async (data) => {
