@@ -1,9 +1,25 @@
 import type { ToolDef, ToolCall } from './groq';
 
-// Fase 1: o Ravi só RASCUNHA um serviço. Nada é gravado aqui — o rascunho volta
-// pra tela, o dono revisa e confirma pelo caminho normal (/api/services).
+// O Havi RASCUNHA (serviço, produto, cliente). Nada é gravado aqui — os rascunhos
+// voltam pra tela e o dono confirma pelos endpoints de sempre (/api/services, /api/clients).
 
 export const RAVI_TOOLS: ToolDef[] = [
+  {
+    name: 'rascunhar_cliente',
+    description:
+      'Monta o rascunho de um cliente. Chame quando estiver cadastrando um cliente novo ou quando extrair o cliente de um contrato. Só precisa do nome; o resto é opcional.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Nome da pessoa de contato ou do cliente' },
+        orgName: { type: ['string', 'null'], description: 'Nome da empresa do cliente (opcional)' },
+        document: { type: ['string', 'null'], description: 'CPF ou CNPJ (opcional)' },
+        email: { type: ['string', 'null'], description: 'E-mail (opcional)' },
+        phone: { type: ['string', 'null'], description: 'Telefone / WhatsApp (opcional)' },
+      },
+      required: ['name'],
+    },
+  },
   {
     name: 'rascunhar_servico',
     description:
@@ -18,25 +34,25 @@ export const RAVI_TOOLS: ToolDef[] = [
           enum: ['once', 'monthly'],
           description: 'once = cobra uma vez; monthly = mensalidade',
         },
-        priceReais: { type: 'number', description: 'Preço por unidade, em REAIS (ex: 1500.00)' },
+        priceReais: { type: ['number', 'null'], description: 'Preço por unidade, em REAIS (ex: 1500.00)' },
         unitLabel: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'Unidade de venda: projeto, hora, diária, pacote, unidade, mês…',
         },
-        description: { type: 'string', description: 'Frase curta do que é (opcional)' },
+        description: { type: ['string', 'null'], description: 'Frase curta do que é (opcional)' },
         details: {
-          type: 'array',
+          type: ['array', 'null'],
           items: { type: 'string' },
           description: 'Entregáveis / o que inclui, um por item (opcional)',
         },
         defaultStages: {
-          type: 'array',
+          type: ['array', 'null'],
           items: { type: 'string' },
           description: 'Etapas/blocos padrão de execução, um por item (opcional)',
         },
-        defaultTimeline: { type: 'string', description: 'Prazo padrão, ex: "30 dias úteis" (opcional)' },
+        defaultTimeline: { type: ['string', 'null'], description: 'Prazo padrão, ex: "30 dias úteis" (opcional)' },
         minCommitment: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'Fidelidade / permanência mínima, ex: "3 meses" (opcional)',
         },
       },
@@ -89,8 +105,47 @@ export function toServiceDraft(rawArgs: string): ServiceDraft | null {
   };
 }
 
-/** Fase 1: só existe rascunhar_servico. Devolve o rascunho ou null. */
-export function runRaviTool(call: ToolCall): { draft: ServiceDraft | null } {
-  if (call.name === 'rascunhar_servico') return { draft: toServiceDraft(call.arguments) };
-  return { draft: null };
+export interface ClientDraft {
+  name: string;
+  orgName: string;
+  document: string;
+  email: string;
+  phone: string;
+}
+
+export function toClientDraft(rawArgs: string): ClientDraft | null {
+  let a: Record<string, unknown>;
+  try {
+    a = JSON.parse(rawArgs || '{}');
+  } catch {
+    return null;
+  }
+  const name = str(a.name, 120);
+  if (!name) return null;
+  return {
+    name,
+    orgName: str(a.orgName, 120),
+    document: str(a.document, 40),
+    email: str(a.email, 160),
+    phone: str(a.phone, 40),
+  };
+}
+
+export type RaviDraft =
+  | { type: 'service'; data: ServiceDraft }
+  | { type: 'client'; data: ClientDraft };
+
+/** Converte as tool-calls do modelo em rascunhos (serviço/produto/cliente). */
+export function runRaviTools(calls: ToolCall[]): RaviDraft[] {
+  const out: RaviDraft[] = [];
+  for (const c of calls) {
+    if (c.name === 'rascunhar_servico') {
+      const d = toServiceDraft(c.arguments);
+      if (d) out.push({ type: 'service', data: d });
+    } else if (c.name === 'rascunhar_cliente') {
+      const d = toClientDraft(c.arguments);
+      if (d) out.push({ type: 'client', data: d });
+    }
+  }
+  return out;
 }

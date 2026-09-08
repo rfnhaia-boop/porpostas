@@ -19,6 +19,7 @@ import {
   ClipboardPaste,
   HelpCircle,
   ChevronDown,
+  Plus,
 } from 'lucide-react';
 
 interface ServiceDraft {
@@ -33,12 +34,20 @@ interface ServiceDraft {
   defaultTimeline: string;
   minCommitment: string;
 }
-type Msg = { role: 'user' | 'assistant'; content: string; draft?: ServiceDraft | null };
+interface ClientDraft {
+  name: string;
+  orgName: string;
+  document: string;
+  email: string;
+  phone: string;
+}
+type Draft = { type: 'service'; data: ServiceDraft } | { type: 'client'; data: ClientDraft };
+type Msg = { role: 'user' | 'assistant'; content: string; raw?: string; drafts?: Draft[] };
 
 const STARTERS = [
   { icon: Wrench, title: 'Serviço novo', desc: 'Um serviço que você entrega', text: 'Quero cadastrar um serviço novo.' },
   { icon: Package, title: 'Produto novo', desc: 'Algo que você vende por unidade', text: 'Quero cadastrar um produto novo.' },
-  { icon: ClipboardPaste, title: 'Colar de um texto', desc: 'Cole o que você vende, eu monto', text: 'Vou colar o texto do que eu vendo, monta o serviço a partir disso.' },
+  { icon: ClipboardPaste, title: 'Ler um contrato', desc: 'Anexe PDF/DOCX ou cole o texto', text: 'Vou te passar um contrato/texto — extrai o cliente e os serviços.' },
   { icon: HelpCircle, title: 'Me ajuda a montar', desc: 'Não sei por onde começar', text: 'Me ajuda a montar um serviço do zero, pergunta o que precisar.' },
 ];
 
@@ -51,6 +60,7 @@ export function RaviServiceChat({
 }) {
   const isPage = variant === 'page';
   const addSavedService = usePlatformStore((s) => s.addSavedService);
+  const addClient = usePlatformStore((s) => s.addClient);
   const queryClient = useQueryClient();
 
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -58,13 +68,16 @@ export function RaviServiceChat({
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [savedNames, setSavedNames] = useState<string[]>([]);
+  const [savedKeys, setSavedKeys] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [recSecs, setRecSecs] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,11 +97,16 @@ export function RaviServiceChat({
   }, [input]);
 
   // --- conversa -------------------------------------------------------------
-  const push = async (text: string) => {
+  // `displayAs` mostra outra coisa na bolha (ex.: "📎 contrato.pdf") mas envia `text` completo pro modelo.
+  const push = async (text: string, displayAs?: string) => {
     const t = text.trim();
     if (!t || thinking) return;
-    const next: Msg[] = [...messages, { role: 'user', content: t }];
-    setMessages(next);
+    const shown: Msg[] = [
+      ...messages,
+      { role: 'user', content: displayAs ?? t, ...(displayAs ? { raw: t } : {}) },
+    ];
+    const next = shown.map((m) => ({ role: m.role, content: m.raw ?? m.content }));
+    setMessages(shown);
     setInput('');
     setThinking(true);
     setErr(null);
@@ -96,16 +114,55 @@ export function RaviServiceChat({
       const res = await fetch('/api/ravi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next.map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ messages: next }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Falha.');
-      setMessages((m) => [...m, { role: 'assistant', content: data.reply, draft: data.draft ?? null }]);
+      setMessages((m) => [
+        ...m,
+        { role: 'assistant', content: data.reply, drafts: Array.isArray(data.drafts) ? data.drafts : [] },
+      ]);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Não consegui responder.');
     } finally {
       setThinking(false);
     }
+  };
+
+  // Anexa um contrato/documento: extrai o texto e manda pro Havi processar.
+  const pickFile = () => fileRef.current?.click();
+  const onFile = async (file: File) => {
+    if (!file || reading || thinking) return;
+    setReading(true);
+    setErr(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/ravi/read-doc', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Não consegui ler o arquivo.');
+      if (!data.text) {
+        setMessages((m) => [
+          ...m,
+          { role: 'user', content: `📎 ${data.fileName || 'arquivo'}` },
+          { role: 'assistant', content: data.note || 'Não achei texto nesse arquivo.' },
+        ]);
+        return;
+      }
+      await push(
+        `Segue o conteúdo do arquivo "${data.fileName}". Extrai o cliente e os serviços (um rascunho por serviço).\n\n"""\n${data.text}\n"""`,
+        `📎 ${data.fileName}`,
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Falha ao ler o arquivo.');
+    } finally {
+      setReading(false);
+    }
+  };
+
+  const markSaved = (key: string, name: string) => {
+    setSavedNames((n) => [...n, name]);
+    setSavedKeys((k) => [...k, key]);
   };
 
   const createService = async (draft: ServiceDraft, key: string) => {
@@ -127,10 +184,29 @@ export function RaviServiceChat({
         quantity: 1,
       });
       queryClient.invalidateQueries({ queryKey: ['services'] });
-      setSavedNames((n) => [...n, draft.name]);
-      setMessages((m) => m.map((msg) => (msg.draft === draft ? { ...msg, draft: null } : msg)));
+      markSaved(key, draft.name);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao salvar.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const createClient = async (draft: ClientDraft, key: string) => {
+    if (saving) return;
+    setSaving(key);
+    setErr(null);
+    try {
+      await addClient({
+        name: draft.name,
+        company: draft.orgName,
+        document: draft.document,
+        email: draft.email,
+      });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      markSaved(key, draft.name);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao salvar cliente.');
     } finally {
       setSaving(null);
     }
@@ -274,15 +350,32 @@ export function RaviServiceChat({
             <div className="flex flex-col gap-4 pb-6">
               {messages.map((m, i) => (
                 <Bubble key={i} role={m.role} content={m.content}>
-                  {m.draft && (
-                    <DraftCard
-                      draft={m.draft}
-                      busy={saving === `d${i}`}
-                      onCreate={() => createService(m.draft!, `d${i}`)}
-                    />
-                  )}
+                  {m.drafts?.map((d, j) => {
+                    const key = `d${i}-${j}`;
+                    if (savedKeys.includes(key)) return null;
+                    return d.type === 'service' ? (
+                      <ServiceCard
+                        key={key}
+                        draft={d.data}
+                        busy={saving === key}
+                        onCreate={() => createService(d.data, key)}
+                      />
+                    ) : (
+                      <ClientCard
+                        key={key}
+                        draft={d.data}
+                        busy={saving === key}
+                        onCreate={() => createClient(d.data, key)}
+                      />
+                    );
+                  })}
                 </Bubble>
               ))}
+              {reading && (
+                <div className="flex items-center gap-1.5 pl-1 text-xs text-white/40">
+                  <Loader2 size={13} className="animate-spin" /> lendo o arquivo…
+                </div>
+              )}
               {thinking && (
                 <div className="flex items-center gap-1.5 pl-1 text-xs text-white/40">
                   <span className="inline-flex gap-1 py-1">
@@ -294,7 +387,10 @@ export function RaviServiceChat({
               )}
               {savedNames.length > 0 && (
                 <div className="flex items-center gap-2 self-start rounded-2xl border border-green-500/40 bg-green-500/10 px-3.5 py-2.5 text-sm text-green-400">
-                  <Check size={15} /> {savedNames.length === 1 ? `"${savedNames[0]}" foi` : `${savedNames.length} serviços foram`} pro catálogo.
+                  <Check size={15} />{' '}
+                  {savedNames.length === 1
+                    ? `"${savedNames[0]}" foi salvo.`
+                    : `${savedNames.length} cadastros salvos.`}
                 </div>
               )}
             </div>
@@ -361,11 +457,32 @@ export function RaviServiceChat({
                   style={{ scrollbarWidth: 'none' }}
                 />
                 <div className="flex items-center justify-between px-4 pb-3.5 pt-1 sm:px-6">
-                  <span className="flex h-9 items-center gap-2 rounded-full border border-[#FF6A00]/20 bg-[#FF6A00]/[0.04] pl-1 pr-3 text-[#FF6A00]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/havi-icon.webp" alt="" className="h-7 w-7 rounded-full" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Havi</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) onFile(f);
+                        e.target.value = '';
+                      }}
+                    />
+                    <button
+                      onClick={pickFile}
+                      disabled={thinking || reading}
+                      title="Anexar contrato (PDF, DOCX, TXT)"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition-all hover:border-white/20 hover:text-white active:scale-95 disabled:opacity-40"
+                    >
+                      {reading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={18} />}
+                    </button>
+                    <span className="flex h-9 items-center gap-2 rounded-full border border-[#FF6A00]/20 bg-[#FF6A00]/[0.04] pl-1 pr-3 text-[#FF6A00]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/havi-icon.webp" alt="" className="h-7 w-7 rounded-full" />
+                      <span className="hidden text-[10px] font-black uppercase tracking-widest sm:inline">Havi</span>
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={toggleMic}
@@ -434,7 +551,34 @@ function Bubble({
   );
 }
 
-function DraftCard({
+function ClientCard({
+  draft,
+  busy,
+  onCreate,
+}: {
+  draft: { name: string; orgName: string; document: string; email: string; phone: string };
+  busy: boolean;
+  onCreate: () => void;
+}) {
+  const lines = [draft.orgName, draft.document, draft.email, draft.phone].filter(Boolean);
+  return (
+    <div className="w-full max-w-[85%] rounded-2xl border border-white/15 bg-white/[0.04] p-4">
+      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/50">Rascunho · cliente</p>
+      <p className="text-base font-bold text-white">{draft.name}</p>
+      {lines.length > 0 && <p className="mt-0.5 text-xs text-zinc-400">{lines.join(' · ')}</p>}
+      <button
+        onClick={onCreate}
+        disabled={busy}
+        className="mt-3 flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white hover:bg-white/20 disabled:opacity-50"
+      >
+        {busy ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+        Criar cliente
+      </button>
+    </div>
+  );
+}
+
+function ServiceCard({
   draft,
   busy,
   onCreate,
@@ -456,7 +600,9 @@ function DraftCard({
 }) {
   return (
     <div className="w-full max-w-[85%] rounded-2xl border border-[#FF6A00]/40 bg-[#FF6A00]/5 p-4">
-      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-[#FF6A00]">Rascunho</p>
+      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-[#FF6A00]">
+        Rascunho · {draft.kind === 'product' ? 'produto' : 'serviço'}
+      </p>
       <p className="text-base font-bold text-white">{draft.name}</p>
       <p className="mt-0.5 text-xs text-zinc-400">
         {draft.kind === 'product' ? 'Produto' : 'Serviço'} ·{' '}
@@ -482,7 +628,7 @@ function DraftCard({
         className="mt-3 flex items-center gap-1.5 rounded-full bg-[#FF6A00] px-4 py-2 text-[11px] font-black uppercase tracking-widest text-[#0A0A0A] disabled:opacity-50"
       >
         {busy ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-        Criar serviço
+        {draft.kind === 'product' ? 'Criar produto' : 'Criar serviço'}
       </button>
     </div>
   );

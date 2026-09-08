@@ -9,6 +9,8 @@ export interface ChatMessage {
   content: string;
   tool_call_id?: string;
   name?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tool_calls?: any[];
 }
 
 export interface ToolDef {
@@ -26,6 +28,9 @@ export interface ToolCall {
 export interface GroqReply {
   content: string | null;
   toolCalls: ToolCall[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rawToolCalls: any[];
+  ok: boolean;
 }
 
 export function raviEnabled(): boolean {
@@ -39,7 +44,7 @@ export async function groqChat(
   tools?: ToolDef[],
 ): Promise<GroqReply> {
   const key = process.env.GROQ_API_KEY;
-  if (!key) return { content: 'O assistente está desligado (falta a chave do Groq).', toolCalls: [] };
+  if (!key) return { content: 'O assistente está desligado (falta a chave do Groq).', toolCalls: [], rawToolCalls: [], ok: false };
 
   try {
     const res = await fetch(GROQ_URL, {
@@ -49,7 +54,7 @@ export async function groqChat(
         model: MODEL,
         messages: [{ role: 'system', content: system }, ...messages],
         temperature: 0.3,
-        max_tokens: 900,
+        max_tokens: 1500,
         ...(tools?.length
           ? {
               tools: tools.map((t) => ({
@@ -65,7 +70,7 @@ export async function groqChat(
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
       console.error('[ravi] groq', res.status, txt.slice(0, 300));
-      return { content: 'Tive um problema pra pensar agora. Tenta de novo?', toolCalls: [] };
+      return { content: 'Tive um problema pra pensar agora. Tenta de novo?', toolCalls: [], rawToolCalls: [], ok: false };
     }
 
     const json = await res.json();
@@ -80,9 +85,9 @@ export async function groqChat(
           }))
       : [];
 
-    return { content: typeof msg.content === 'string' ? msg.content : null, toolCalls };
+    return { content: typeof msg.content === 'string' ? msg.content : null, toolCalls, rawToolCalls: Array.isArray(msg.tool_calls) ? msg.tool_calls : [], ok: true };
   } catch (err) {
     console.error('[ravi] falha:', err);
-    return { content: 'Não consegui responder agora. Tenta de novo em um instante.', toolCalls: [] };
+    return { content: 'Não consegui responder agora. Tenta de novo em um instante.', toolCalls: [], rawToolCalls: [], ok: false };
   }
 }
