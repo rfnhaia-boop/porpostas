@@ -8,6 +8,7 @@ export type EmailKey =
   | 'proposal_sent'
   | 'payment_submitted'
   | 'payment_confirmed'
+  | 'project_started'
   | 'project_update'
   | 'project_delivered'
   | 'payment_reminder'
@@ -51,6 +52,15 @@ export const EMAIL_TEMPLATES: Record<EmailKey, EmailTemplateDef> = {
     subject: '{{empresa}} · pagamento confirmado ({{cobranca}})',
     title: 'Recebemos seu pagamento',
     body: 'A {{empresa}} confirmou o pagamento de {{valor}} ({{cobranca}}) do projeto {{projeto}}. Obrigado!',
+  },
+  project_started: {
+    key: 'project_started',
+    label: 'Projeto iniciado (contrato anexado)',
+    audience: 'cliente',
+    vars: ['cliente', 'empresa', 'projeto', 'prazo'],
+    subject: '{{empresa}} · projeto {{projeto}} iniciado',
+    title: 'Seu projeto começou!',
+    body: '{{cliente}}, o contrato foi anexado e o projeto {{projeto}} está oficialmente em andamento na {{empresa}}.\n\nO prazo previsto é de {{prazo}}. Acompanhe as etapas e os pagamentos pelo seu portal.',
   },
   project_update: {
     key: 'project_update',

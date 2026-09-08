@@ -219,6 +219,9 @@ model Proposal {
   viewCount      Int       @default(0)
   startedAt      DateTime? // marcado "em execução"
   deliveredAt    DateTime? // marcado "entregue"
+  // Trava de início: se true, o aceite do cliente NÃO inicia a execução —
+  // ela só começa (status in_progress + startedAt) quando o dono anexa o contrato assinado.
+  requiresSignedContract Boolean @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   respondedAt    DateTime?

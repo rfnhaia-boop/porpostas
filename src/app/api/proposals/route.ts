@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
   } catch (e) { return Response.json({ error: e instanceof Error ? e.message : 'Modelo inválido.' }, { status: 400 }); }
   const total = commercial ? commercialTotals(items, commercial).total : items.reduce((sum, it) => sum + it.price, 0);
   const status = body?.status === 'sent' ? 'sent' : 'draft';
+  const requiresSignedContract = body?.requiresSignedContract === true;
   const accessPhrase =
     typeof body?.accessPhrase === 'string' && body.accessPhrase.trim()
       ? body.accessPhrase.trim().slice(0, 100)
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
           paymentTerms: commercial ? commercialPaymentTerms(items, commercial, formatBRL) : typeof body?.paymentTerms === 'string' ? body.paymentTerms : '',
           notes: typeof body?.notes === 'string' ? body.notes : '',
           accessPhrase,
+          requiresSignedContract,
           total,
           status,
           items: { create: items },

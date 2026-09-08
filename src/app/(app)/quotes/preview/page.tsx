@@ -84,6 +84,7 @@ export default function PreviewPage() {
     paymentTerms,
     notes: quoteDraft.notes,
     accessPhrase,
+    requiresSignedContract: quoteDraft.requiresSignedContract,
     items: quoteDraft.services.map((s) => ({
       billingType: s.billingType, optional: s.optional, selected: s.selected, packageId: s.packageId,
       name: s.name,
@@ -107,8 +108,9 @@ export default function PreviewPage() {
         validityDays: quoteDraft.validityDays,
         timeline: quoteDraft.timeline,
         paymentTerms,
-        notes: quoteDraft.notes,
         accessPhrase,
+        requiresSignedContract: quoteDraft.requiresSignedContract,
+        notes: quoteDraft.notes,
         items: buildPayload().items,
         status,
       });

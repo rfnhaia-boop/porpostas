@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { awaitingContract } from '@/lib/contractGate';
 import { formatBRL } from '@/lib/money';
 import { usePlatformStore } from '@/store/usePlatformStore';
 import { buildProjectSummary } from '@/lib/projectSummary';
@@ -104,7 +105,10 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const st = STATUS_LABEL[proposal.status] ?? STATUS_LABEL.approved;
+  const gated = awaitingContract(proposal);
+  const st = gated
+    ? { text: 'Aguardando contrato', className: 'text-amber-500 border-amber-500/30 bg-amber-500/10' }
+    : STATUS_LABEL[proposal.status] ?? STATUS_LABEL.approved;
   const paidTotal = proposal.payments
     .filter((p) => p.status === 'paid')
     .reduce((s, p) => s + p.amount, 0);
@@ -149,7 +153,7 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="mb-8 flex flex-wrap gap-2">
-          {proposal.status === 'approved' && (
+          {proposal.status === 'approved' && !gated && (
             <button
               onClick={() => setStatus.mutate('in_progress')}
               disabled={setStatus.isPending}
@@ -157,6 +161,14 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
             >
               {setStatus.isPending ? <Loader2 size={13} className="animate-spin" /> : <Circle size={13} />}
               Iniciar execução
+            </button>
+          )}
+          {gated && (
+            <button
+              onClick={() => setExecOpen(true)}
+              className="flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-[#0A0A0A] transition hover:opacity-90"
+            >
+              <FileText size={14} /> Anexar contrato assinado
             </button>
           )}
           {proposal.status === 'in_progress' && (
@@ -176,6 +188,25 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
             <FileCog size={14} /> Contrato e cobrança
           </button>
         </div>
+
+        {gated && (
+          <div className="mb-8 rounded-3xl border border-amber-500/40 bg-amber-500/[0.08] p-6 sm:p-8">
+            <h3 className="text-xs font-black uppercase tracking-widest text-amber-500">
+              Aguardando contrato assinado
+            </h3>
+            <p className="mt-2 text-sm text-[var(--foreground)]">
+              {proposal.client?.name || 'O cliente'} já aceitou a proposta
+              {proposal.respondedAt ? ` em ${fmtDate(proposal.respondedAt)}` : ''}. A execução, os prazos
+              e o andamento só começam quando você anexar o contrato assinado.
+            </p>
+            <button
+              onClick={() => setExecOpen(true)}
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-[#0A0A0A] transition hover:opacity-90"
+            >
+              <FileText size={14} /> Anexar contrato pra iniciar
+            </button>
+          </div>
+        )}
 
         {/* Pagamentos — resumo */}
         <div className="liquid-glass mb-8 rounded-3xl p-6 sm:p-8">
@@ -265,15 +296,19 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
           </div>
         )}
 
-        <div className="mb-8">
-          <ProjectBlocks
-            proposalId={id}
-            blocks={proposal.blocks ?? []}
-            suggestions={blockSuggestions}
-          />
-        </div>
+        {!gated && (
+          <>
+            <div className="mb-8">
+              <ProjectBlocks
+                proposalId={id}
+                blocks={proposal.blocks ?? []}
+                suggestions={blockSuggestions}
+              />
+            </div>
 
-        <ProgressLog proposalId={id} updates={proposal.progressUpdates ?? []} />
+            <ProgressLog proposalId={id} updates={proposal.progressUpdates ?? []} />
+          </>
+        )}
       </motion.div>
 
       {execOpen && <ExecutionModal proposal={proposal} onClose={() => setExecOpen(false)} />}

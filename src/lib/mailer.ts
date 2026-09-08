@@ -222,6 +222,41 @@ export async function mailProjectUpdate(proposalId: string, what = 'novas entreg
   }
 }
 
+// --- projeto iniciado (contrato anexado) → cliente ---------------------------
+export async function mailProjectStarted(proposalId: string) {
+  try {
+    const p = await prisma.proposal.findUnique({
+      where: { id: proposalId },
+      select: {
+        title: true,
+        proposalNumber: true,
+        timeline: true,
+        companyId: true,
+        client: { select: { name: true, email: true } },
+      },
+    });
+    if (!p?.client?.email || !isEmail(p.client.email)) return;
+    const { replyTo, companyName } = await companyReplyTo(p.companyId);
+    const first = p.client.name?.trim().split(/\s+/)[0] || 'Olá';
+
+    await dispatch({
+      companyId: p.companyId,
+      key: 'project_started',
+      to: p.client.email,
+      replyTo,
+      vars: {
+        cliente: first,
+        empresa: companyName,
+        projeto: p.title || p.proposalNumber,
+        prazo: p.timeline || 'a combinar',
+      },
+      cta: { label: 'Acompanhar no portal', href: appUrl('/portal') },
+    });
+  } catch (err) {
+    console.error('[mailer] projectStarted:', err);
+  }
+}
+
 // --- projeto entregue → cliente -------------------------------------------------
 export async function mailProjectDelivered(proposalId: string) {
   try {

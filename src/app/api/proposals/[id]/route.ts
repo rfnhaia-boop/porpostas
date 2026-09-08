@@ -49,6 +49,16 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     const p = typeof body.accessPhrase === 'string' ? body.accessPhrase.trim() : '';
     data.accessPhrase = p ? p.slice(0, 100) : null;
   }
+  // Trava de contrato: só dá pra ligar/desligar enquanto a proposta ainda não foi aceita.
+  if (typeof body.requiresSignedContract === 'boolean') {
+    if (['approved', 'in_progress', 'delivered'].includes(existing.status)) {
+      return Response.json(
+        { error: 'A proposta já foi aceita — não dá pra mudar a trava de contrato.' },
+        { status: 400 },
+      );
+    }
+    data.requiresSignedContract = body.requiresSignedContract;
+  }
   if (body.maxAccesses !== undefined) {
     const n = Number(body.maxAccesses);
     if (Number.isFinite(n)) data.maxAccesses = Math.min(3, Math.max(1, Math.round(n)));

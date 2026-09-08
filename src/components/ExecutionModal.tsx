@@ -7,6 +7,7 @@ import { formatBRL, toCents } from '@/lib/money';
 import { AlertTriangle, CheckCircle2, Circle, FileText, Paperclip, QrCode, Star, Trash2, Upload, X } from 'lucide-react';
 import { PaymentEntriesReview } from '@/components/PaymentEntriesReview';
 import { resolvePix } from '@/lib/pixResolve';
+import { awaitingContract } from '@/lib/contractGate';
 import Link from 'next/link';
 
 function PunctualityBanner({ clientId }: { clientId: string }) {
@@ -32,7 +33,7 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-function ContractBox({ proposal }: { proposal: Proposal }) {
+function ContractBox({ proposal, highlight = false }: { proposal: Proposal; highlight?: boolean }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +52,10 @@ function ContractBox({ proposal }: { proposal: Proposal }) {
   });
 
   return (
-    <div className="liquid-glass rounded-2xl p-6">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-4">Contrato</h3>
+    <div className={`liquid-glass rounded-2xl p-6 ${highlight ? 'border border-[#FF6A00]/50 shadow-[0_0_24px_rgba(255,106,0,0.15)]' : ''}`}>
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-4">
+        {highlight ? 'Contrato assinado · anexe pra iniciar' : 'Contrato'}
+      </h3>
       {proposal.contractFileName ? (
         <div className="flex items-center justify-between gap-3">
           <a
@@ -462,6 +465,7 @@ function PaymentsList({ proposal }: { proposal: Proposal }) {
 
 export default function ExecutionModal({ proposal, onClose }: { proposal: Proposal; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const gated = awaitingContract(proposal);
   const setStatus = useMutation({
     mutationFn: (status: 'in_progress' | 'delivered') =>
       api.proposals.update(proposal.id, { status }),
@@ -484,8 +488,18 @@ export default function ExecutionModal({ proposal, onClose }: { proposal: Propos
           </button>
         </div>
 
+        {gated && (
+          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-500">Aguardando contrato assinado</p>
+            <p className="mt-1 text-sm text-[var(--foreground)]">
+              O cliente já aceitou. A execução e os prazos começam quando você anexar o contrato
+              assinado aqui embaixo.
+            </p>
+          </div>
+        )}
+
         <div className="flex gap-2 mb-6">
-          {proposal.status === 'approved' && (
+          {proposal.status === 'approved' && !gated && (
             <button
               onClick={() => setStatus.mutate('in_progress')}
               disabled={setStatus.isPending}
@@ -511,10 +525,11 @@ export default function ExecutionModal({ proposal, onClose }: { proposal: Propos
         </div>
 
         <div className="space-y-6">
+          {gated && <ContractBox proposal={proposal} highlight />}
           {proposal.clientId && <PunctualityBanner clientId={proposal.clientId} />}
           <ClientReviews proposal={proposal} />
           <PixBox proposal={proposal} />
-          <ContractBox proposal={proposal} />
+          {!gated && <ContractBox proposal={proposal} />}
           {proposal.payments.length === 0 ? (
             proposal.commercial ? <p className="text-sm text-[var(--text-muted)]">As cobranças serão geradas a partir das condições comerciais no aceite.</p> : <PlanForm proposalId={proposal.id} />
           ) : (

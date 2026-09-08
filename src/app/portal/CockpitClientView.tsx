@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PixQRCode } from "@/components/PixQRCode";
 import { buildProjectSummary } from "@/lib/projectSummary";
+import { awaitingContract } from "@/lib/contractGate";
 import { formatBRL } from "@/lib/money";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -105,6 +106,7 @@ export default function CockpitClientView({ proposals }: { proposals: any[] }) {
 }
 
 function ProjectCockpit({ proposal }: { proposal: any }) {
+  const gated = awaitingContract(proposal);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -118,6 +120,18 @@ function ProjectCockpit({ proposal }: { proposal: any }) {
       }}
     >
       {proposal.status === "delivered" && <ProjectDoneCard proposal={proposal} />}
+
+      {gated && (
+        <div className="mb-8 rounded-3xl border border-amber-500/40 bg-amber-500/10 p-6 md:p-8">
+          <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-amber-500">
+            Proposta aceita · aguardando contrato
+          </p>
+          <p className="mt-2 text-sm md:text-base text-[var(--foreground)] font-medium max-w-xl">
+            Agora é a etapa do contrato. Assim que a empresa anexar o contrato assinado, o projeto
+            começa e você acompanha as etapas e os pagamentos por aqui.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-10 border-b border-white/10">
         <div>
@@ -150,8 +164,16 @@ function ProjectCockpit({ proposal }: { proposal: any }) {
               </a>
             )}
           </div>
-          <div className="px-6 py-2 rounded-full bg-green-500/10 text-green-500 border border-green-500/20 text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-            {STATUS_LABEL[proposal.status] || "Ativo"} · Prazo: {proposal.timeline}
+          <div
+            className={`px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest ${
+              gated
+                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                : "bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.2)]"
+            }`}
+          >
+            {gated
+              ? "Aguardando contrato"
+              : `${STATUS_LABEL[proposal.status] || "Ativo"} · Prazo: ${proposal.timeline}`}
           </div>
         </div>
       </div>

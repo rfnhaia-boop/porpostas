@@ -148,6 +148,7 @@ export interface Proposal {
   respondedAt: string | null;
   startedAt: string | null;
   deliveredAt: string | null;
+  requiresSignedContract: boolean;
   contractFileName: string | null;
   contractMimeType: string | null;
   contractSize: number | null;
@@ -318,6 +319,7 @@ export const api = {
       notes: string;
       status?: 'draft' | 'sent';
       accessPhrase?: string | null;
+      requiresSignedContract?: boolean;
       items: ItemInput[];
     }) => request<Proposal>('/api/proposals', { method: 'POST', body: JSON.stringify(data) }),
     update: (
@@ -328,6 +330,7 @@ export const api = {
           status: ProposalStatus;
           accessPhrase: string | null;
           maxAccesses: number;
+          requiresSignedContract: boolean;
           items: ItemInput[];
         } & Pick<
           Proposal,

@@ -114,6 +114,42 @@ export default function NewQuotePage() {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
           <CommercialEditor />
           {!quoteDraft.commercial && <button className="mb-5 text-sm text-[#FF6A00]" onClick={() => updateQuoteDraft({ commercial: newCommercialConfig() })}>Aplicar modelo comercial a esta proposta</button>}
+
+          <div className="mb-10 rounded-3xl border border-[var(--border-color)] liquid-glass p-6">
+            <h3 className="mb-1 text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Início do projeto</h3>
+            <p className="mb-4 text-sm text-[var(--text-muted)]">Quando a execução e os prazos começam a contar.</p>
+            <div className="flex flex-col gap-3">
+              {[
+                { v: false, label: 'Começa quando o cliente aceitar', hint: 'A proposta aceita já entra em execução.' },
+                { v: true, label: 'Só começa depois que eu anexar o contrato assinado', hint: 'A proposta fica "aguardando contrato" até você anexá-lo. Aí os prazos passam a contar.' },
+              ].map((opt) => {
+                const active = !!quoteDraft.requiresSignedContract === opt.v;
+                return (
+                  <button
+                    key={String(opt.v)}
+                    type="button"
+                    onClick={() => updateQuoteDraft({ requiresSignedContract: opt.v })}
+                    className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors ${
+                      active ? 'border-[#FF6A00] bg-[#FF6A00]/[0.06]' : 'border-[var(--border-color)] hover:border-[var(--text-muted)]'
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        active ? 'border-[#FF6A00]' : 'border-[var(--border-color)]'
+                      }`}
+                    >
+                      {active && <span className="h-2.5 w-2.5 rounded-full bg-[#FF6A00]" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-[var(--foreground)]">{opt.label}</span>
+                      <span className="mt-0.5 block text-xs text-[var(--text-muted)]">{opt.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <h2 className="text-xl font-bold mb-6">Adicionar serviços do catálogo</h2>
           <div className="flex flex-col gap-4 mb-12">
             {savedServices.map(service => {

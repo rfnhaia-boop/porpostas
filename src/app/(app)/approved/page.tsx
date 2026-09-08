@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { api, type Proposal } from '@/lib/api';
+import { awaitingContract } from '@/lib/contractGate';
 import { formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -45,7 +46,9 @@ export default function ApprovedPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {approved.map((p, i) => {
-            const st = STATUS_LABEL[p.status] ?? STATUS_LABEL.approved;
+            const st = awaitingContract(p)
+              ? { text: 'Aguardando contrato', className: 'text-amber-500' }
+              : STATUS_LABEL[p.status] ?? STATUS_LABEL.approved;
             const months = p.progressUpdates?.length ?? 0;
             return (
               <motion.div

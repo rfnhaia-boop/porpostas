@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentCompanyId } from '@/lib/company';
 import { readUploadedFile } from '@/lib/fileUpload';
+import { mailProjectStarted } from '@/lib/mailer';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,6 +16,10 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   const result = await readUploadedFile(request);
   if ('error' in result) return Response.json({ error: result.error }, { status: 400 });
 
+  // Trava de contrato: anexar o contrato assinado numa proposta aceita é o que
+  // dá o start — vira "em execução" e o cronômetro/prazos começam a contar agora.
+  const startsExecution = proposal.requiresSignedContract && proposal.status === 'approved';
+
   await prisma.proposal.update({
     where: { id },
     data: {
@@ -23,9 +28,13 @@ export async function POST(request: NextRequest, { params }: Ctx) {
       contractSize: result.size,
       contractData: new Uint8Array(result.data),
       contractUploadedAt: new Date(),
+      ...(startsExecution ? { status: 'in_progress', startedAt: new Date() } : {}),
     },
   });
-  return Response.json({ ok: true, fileName: result.fileName, size: result.size });
+
+  if (startsExecution) void mailProjectStarted(id);
+
+  return Response.json({ ok: true, fileName: result.fileName, size: result.size, started: startsExecution });
 }
 
 export async function GET(_request: NextRequest, { params }: Ctx) {
