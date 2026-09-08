@@ -7,6 +7,7 @@ import { usePlatformStore } from '@/store/usePlatformStore';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, PartyPopper, X } from 'lucide-react';
+import { RaviOnboardingChat } from '@/components/ravi/RaviOnboardingChat';
 
 const HIDE_KEY = 'fecho-onboarding-hidden';
 
@@ -36,7 +37,12 @@ export function OnboardingChecklist() {
     queryKey: ['proposals'],
     queryFn: api.proposals.list,
   });
+  const { data: company } = useQuery({
+    queryKey: ['company'],
+    queryFn: api.company.get,
+  });
   const [hidden, setHidden] = useState<boolean>(() => readHidden());
+  const [haviOpen, setHaviOpen] = useState(false);
 
   if (hidden) return null;
 
@@ -46,6 +52,14 @@ export function OnboardingChecklist() {
   );
 
   const steps = [
+    {
+      done: !!company?.haviContext,
+      label: 'Conte pro Havi sobre a empresa',
+      hint: 'Uma conversa rápida — ele passa a usar esse contexto em tudo.',
+      cta: 'Conversar com o Havi',
+      to: '',
+      action: () => setHaviOpen(true),
+    },
     {
       done: savedServices.length > 0,
       label: 'Cadastre um serviço',
@@ -121,6 +135,10 @@ export function OnboardingChecklist() {
   }
 
   return (
+    <>
+    {haviOpen && (
+      <RaviOnboardingChat onClose={() => setHaviOpen(false)} />
+    )}
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -183,7 +201,7 @@ export function OnboardingChecklist() {
 
               {!step.done && (
                 <button
-                  onClick={() => router.push(step.to)}
+                  onClick={() => ('action' in step && step.action ? step.action() : router.push(step.to))}
                   className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
                     isNext
                       ? 'bg-[#FF6A00] text-[#0A0A0A] hover:opacity-90'
@@ -208,5 +226,6 @@ export function OnboardingChecklist() {
         <X size={11} /> Ocultar guia
       </button>
     </motion.div>
+    </>
   );
 }

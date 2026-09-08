@@ -8,8 +8,10 @@ import { mailVerifyCompanyEmail } from '@/lib/mailer';
 export async function GET() {
   const company = await getCurrentCompany();
   if (!company) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
-  const { emailVerifyToken: _t, ...safe } = company;
+  // haviOnboardingLog é a transcrição bruta da conversa de descoberta — não vai no payload geral.
+  const { emailVerifyToken: _t, haviOnboardingLog: _log, ...safe } = company;
   void _t;
+  void _log;
   return Response.json(safe);
 }
 

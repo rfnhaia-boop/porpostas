@@ -13,6 +13,8 @@ export interface Company {
   pixReceiverName: string;
   pixReceiverCity: string;
   emailVerified: boolean;
+  haviContext: string;
+  haviContextAt: string | null;
 }
 
 export interface Client {

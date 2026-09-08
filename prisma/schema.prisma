@@ -23,6 +23,10 @@ model Company {
   pixKeyType      String @default("") // cpf | cnpj | email | phone | random ('' = não configurado)
   pixReceiverName String @default("") // nome do recebedor (máx 25 no BR Code)
   pixReceiverCity String @default("") // cidade do recebedor (máx 15 no BR Code)
+  // Contexto da empresa que o Havi usa em toda conversa — montado numa conversa de descoberta.
+  haviContext       String   @default("") // perfil em texto que o Havi escreveu
+  haviContextAt     DateTime?              // quando foi montado / revisado
+  haviOnboardingLog String   @default("") // transcrição (JSON) da conversa de descoberta
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

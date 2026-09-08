@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { getCurrentCompanyId } from '@/lib/company';
+import { getCurrentCompany } from '@/lib/company';
 import { groqChat, raviEnabled, type ChatMessage } from '@/lib/ravi/groq';
 import { RAVI_TOOLS, runRaviTools } from '@/lib/ravi/tools';
-import { RAVI_SERVICE_SYSTEM } from '@/lib/ravi/systemPrompt';
+import { raviServiceSystem } from '@/lib/ravi/systemPrompt';
 
 export async function GET() {
   return Response.json({ enabled: raviEnabled() });
@@ -12,9 +12,11 @@ const MAX_MSGS = 30;
 const MAX_LEN = 4000;
 
 export async function POST(req: NextRequest) {
-  const companyId = await getCurrentCompanyId();
-  if (!companyId) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
+  const company = await getCurrentCompany();
+  if (!company) return Response.json({ error: 'Não autenticado.' }, { status: 401 });
   if (!raviEnabled()) return Response.json({ error: 'Ravi indisponível no momento.' }, { status: 503 });
+
+  const system = raviServiceSystem(company.haviContext);
 
   const body = await req.json().catch(() => null);
   const raw = Array.isArray(body?.messages) ? body.messages : null;
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
   let finalContent: string | null = null;
 
   for (let round = 0; round < 3; round++) {
-    const { content, toolCalls, rawToolCalls, ok } = await groqChat(RAVI_SERVICE_SYSTEM, convo, RAVI_TOOLS);
+    const { content, toolCalls, rawToolCalls, ok } = await groqChat(system, convo, RAVI_TOOLS);
     // Se deu erro/limite no meio do loop mas já temos rascunhos, para e entrega o que tem.
     if (!ok) {
       if (drafts.length) break;
