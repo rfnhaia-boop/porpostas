@@ -43,7 +43,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           }}
         >
           <div className="flex items-center gap-6">
-            <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-[#FF6A00]">NEX <span className="text-[var(--foreground)] opacity-50">Portal</span></h2>
+            <span className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/nex-logo.webp" alt="NEX" className="h-6 w-auto" />
+              <span className="text-sm font-black uppercase tracking-widest text-[var(--foreground)] opacity-50">Portal</span>
+            </span>
             <nav className="hidden md:flex items-center gap-1">
               {NAV.map(({ href, label, icon: Icon }) => {
                 const active = href === "/portal" ? pathname === href : pathname.startsWith(href);

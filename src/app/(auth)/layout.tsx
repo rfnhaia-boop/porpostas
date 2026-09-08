@@ -11,10 +11,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none z-0" />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="mb-10 text-center">
-          <h1 className="font-display text-5xl font-black tracking-widest uppercase text-white drop-shadow-[0_0_15px_rgba(255,106,0,0.3)]">
-            NEX<span className="text-[#FF6A00]">.</span>
-          </h1>
+        <div className="mb-10 flex flex-col items-center text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/nex-logo.webp"
+            alt="NEX"
+            className="h-12 w-auto drop-shadow-[0_0_15px_rgba(255,106,0,0.3)]"
+          />
           <p className="mt-3 text-[9px] font-black uppercase tracking-[0.4em] text-white/40">
             Acesso Restrito
           </p>

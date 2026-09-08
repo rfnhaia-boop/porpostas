@@ -37,9 +37,8 @@ export const Sidebar = ({ open = false, onClose }: { open?: boolean; onClose?: (
       }`}
     >
       <div className="p-8 flex justify-between items-center">
-        <h1 className="text-3xl font-black tracking-tighter uppercase text-[var(--foreground)]">
-          NE<span className="text-[#FF6A00]">X</span>
-        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nex-logo.webp" alt="NEX" className="h-7 w-auto shrink-0" />
         <div className="flex items-center gap-1">
           <span className="hidden lg:flex items-center gap-1">
             <NotificationsBell />

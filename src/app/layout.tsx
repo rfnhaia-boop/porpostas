@@ -15,6 +15,7 @@ const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-gr
 export const metadata: Metadata = {
   title: 'Fechô',
   description: 'Propostas Arquiteturais de Alta Performance',
+  icons: { icon: '/havi-icon-48.png', apple: '/havi-icon-512.png' },
 };
 
 // Aplica o tema (classe .dark no <html>) antes do React hidratar — sem flash, sem mismatch.

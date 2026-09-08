@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { RaviServiceChat } from '@/components/ravi/RaviServiceChat';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Package, Wrench, X, Check, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Package, Wrench, X, Check } from 'lucide-react';
 
 type Kind = 'service' | 'product';
 
@@ -118,9 +118,10 @@ export default function ServicesPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setRaviOpen(true)}
-              className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20"
+              className="flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20"
             >
-              <Sparkles size={14} /> Criar com o Ravi
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/havi-icon.webp" alt="" className="h-5 w-5 rounded-full" /> Criar com o Havi
             </button>
             <button
               onClick={() => openNew('service')}

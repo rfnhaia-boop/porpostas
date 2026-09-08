@@ -15,9 +15,8 @@ export function MobileBar({ onMenu }: { onMenu: () => void }) {
       >
         <Menu size={22} />
       </button>
-      <h1 className="text-xl font-black uppercase tracking-tighter text-[var(--foreground)]">
-        NE<span className="text-[#FF6A00]">X</span>
-      </h1>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/nex-logo.webp" alt="NEX" className="h-5 w-auto" />
       <div className="flex items-center gap-1">
         <NotificationsBell />
         <ThemeToggle />

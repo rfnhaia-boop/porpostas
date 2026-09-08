@@ -6,7 +6,6 @@ import { usePlatformStore } from '@/store/usePlatformStore';
 import { toCents, formatBRL } from '@/lib/money';
 import { motion } from 'framer-motion';
 import {
-  Sparkles,
   ArrowUp,
   X,
   Loader2,
@@ -201,10 +200,9 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.05] px-5 sm:px-8">
           <div className="flex items-center gap-2 text-zinc-300">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 text-[#FF6A00]">
-              <Sparkles size={13} />
-            </span>
-            <span className="text-sm font-light tracking-wide">Ravi</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/havi-icon.webp" alt="Havi" className="h-7 w-7 rounded-full" />
+            <span className="text-sm font-light tracking-wide">Havi</span>
             <ChevronDown size={13} className="opacity-30" />
           </div>
           <div className="flex items-center gap-3">
@@ -232,11 +230,12 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-9 flex flex-col items-center"
               >
-                <span className="text-4xl font-black uppercase tracking-tight text-white">
-                  NE<span className="text-[#FF6A00]">X</span>
-                </span>
-                <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.35em] text-white/30">
-                  Fechô · Ravi
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/havi-pose.webp" alt="Havi" className="mb-4 h-36 w-auto drop-shadow-[0_0_40px_rgba(255,106,0,0.25)] sm:h-44" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/nex-logo.webp" alt="NEX" className="h-8 w-auto" />
+                <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.35em] text-white/30">
+                  Fechô · Havi
                 </span>
                 <h2 className="mt-6 text-lg font-light tracking-tight text-zinc-300 sm:text-xl">
                   O que a gente vai cadastrar hoje?
@@ -350,14 +349,15 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
                   }}
                   rows={1}
                   disabled={thinking}
-                  placeholder={hasStarted ? 'Escreve ou fala pro Ravi…' : 'Ex: "gestão de tráfego, mensal, R$ 1.500"'}
+                  placeholder={hasStarted ? 'Escreve ou fala pro Havi…' : 'Ex: "gestão de tráfego, mensal, R$ 1.500"'}
                   className="w-full resize-none bg-transparent px-5 pb-2 pt-4 text-[15px] font-light tracking-wide text-white outline-none placeholder:text-zinc-500 disabled:opacity-60 sm:px-7"
                   style={{ scrollbarWidth: 'none' }}
                 />
                 <div className="flex items-center justify-between px-4 pb-3.5 pt-1 sm:px-6">
-                  <span className="flex h-9 items-center gap-2 rounded-full border border-[#FF6A00]/20 bg-[#FF6A00]/[0.04] px-3 text-[#FF6A00]">
-                    <Sparkles size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Ravi</span>
+                  <span className="flex h-9 items-center gap-2 rounded-full border border-[#FF6A00]/20 bg-[#FF6A00]/[0.04] pl-1 pr-3 text-[#FF6A00]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/havi-icon.webp" alt="" className="h-7 w-7 rounded-full" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Havi</span>
                   </span>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
@@ -382,7 +382,7 @@ export function RaviServiceChat({ onClose }: { onClose: () => void }) {
             )}
           </div>
           <p className="mt-2.5 text-center text-[10px] font-mono uppercase tracking-widest text-zinc-600">
-            O Ravi rascunha — nada é salvo sem você confirmar.
+            O Havi rascunha — nada é salvo sem você confirmar.
           </p>
         </div>
       </motion.div>
