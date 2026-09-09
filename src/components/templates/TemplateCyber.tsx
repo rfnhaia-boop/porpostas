@@ -91,8 +91,8 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
 
         {/* Cliente */}
         {client && (
-          <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-6 pt-12 pb-8 border-b border-white/5 print:border-transparent">
-            <div>
+          <motion.div variants={fadeUp} className="flex flex-col gap-6 border-b border-white/5 pt-12 pb-8 print:border-transparent sm:flex-row sm:flex-wrap sm:items-end sm:justify-between md:flex-nowrap md:gap-8">
+            <div className="min-w-0">
               <p className="font-mono text-[9px] uppercase tracking-[.3em] text-white/30 print:text-black/45">Preparado para</p>
               <p className="mt-2 font-display text-3xl font-light text-white">{client.name}</p>
               {client.company && (
@@ -101,17 +101,17 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
                 </p>
               )}
             </div>
-            <dl className={`grid grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-2 text-right font-mono text-[11px] ${(q.minTerm || q.commercial?.commitmentMonths) ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
-              <div>
+            <dl className="flex shrink-0 flex-wrap justify-start gap-x-6 gap-y-2 text-left font-mono text-[11px] sm:justify-end sm:text-right">
+              <div className="min-w-[64px]">
                 <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Validade</dt>
                 <dd className="mt-1 text-white/80 font-bold print:text-black">{q.validityDays}</dd>
               </div>
-              <div>
+              <div className="min-w-[64px]">
                 <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Prazo Estimado</dt>
                 <dd className="mt-1 text-white/80 font-bold print:text-black">{q.timeline}</dd>
               </div>
               {(q.minTerm || q.commercial?.commitmentMonths) ? (
-                <div>
+                <div className="min-w-[64px]">
                   <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Prazo Mínimo</dt>
                   <dd className="mt-1 text-white/80 font-bold print:text-black">{q.minTerm || `${q.commercial?.commitmentMonths} meses`}</dd>
                 </div>
