@@ -15,8 +15,8 @@ export default function HaviPage() {
   const hasContext = !!company?.haviContext;
 
   return (
-    <div className="flex h-[calc(100dvh-0px)] flex-col gap-3 p-3 sm:p-6 lg:p-8">
-      <div className="mx-auto w-full max-w-4xl">
+    <div className="mx-auto flex h-[calc(100dvh-0px)] w-full max-w-3xl flex-col gap-3 p-3 sm:p-4 lg:p-6">
+      <div className="w-full">
         <button
           onClick={() => setOnbOpen(true)}
           className={`flex w-full items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-left text-xs transition-colors ${
@@ -39,7 +39,7 @@ export default function HaviPage() {
         </button>
       </div>
 
-      <div className="mx-auto min-h-0 w-full max-w-4xl flex-1">
+      <div className="min-h-0 w-full flex-1">
         <RaviServiceChat variant="page" onClose={() => router.push('/')} />
       </div>
 

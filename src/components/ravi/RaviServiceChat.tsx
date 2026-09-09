@@ -309,23 +309,23 @@ export function RaviServiceChat({
         {/* Conteúdo */}
         <div
           ref={scrollRef}
-          className="custom-scrollbar mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto px-5 pt-6 sm:px-8"
+          className="custom-scrollbar mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-y-auto px-5 pt-4 sm:px-8"
         >
           {!hasStarted ? (
-            <div className="flex flex-1 flex-col items-center justify-center pb-6 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-9 flex flex-col items-center"
+                className="flex flex-col items-center"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/havi-pose.webp" alt="Havi" className="mb-4 h-36 w-auto drop-shadow-[0_0_40px_rgba(255,106,0,0.25)] sm:h-44" />
+                <img src="/havi-pose.webp" alt="Havi" className="mb-3 h-24 w-auto drop-shadow-[0_0_40px_rgba(255,106,0,0.25)] sm:h-28" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/nex-logo.webp" alt="NEX" className="h-8 w-auto" />
-                <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.35em] text-white/30">
+                <img src="/nex-logo.webp" alt="NEX" className="h-7 w-auto" />
+                <span className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.35em] text-white/30">
                   Fechô · Havi
                 </span>
-                <h2 className="mt-6 text-lg font-light tracking-tight text-zinc-300 sm:text-xl">
+                <h2 className="mt-4 text-lg font-light tracking-tight text-zinc-300 sm:text-xl">
                   O que a gente vai cadastrar hoje?
                 </h2>
               </motion.div>
