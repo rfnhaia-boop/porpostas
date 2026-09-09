@@ -101,7 +101,7 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
                 </p>
               )}
             </div>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2 text-right font-mono text-[11px]">
+            <dl className={`grid grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-2 text-right font-mono text-[11px] ${(q.minTerm || q.commercial?.commitmentMonths) ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               <div>
                 <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Validade</dt>
                 <dd className="mt-1 text-white/80 font-bold print:text-black">{q.validityDays}</dd>

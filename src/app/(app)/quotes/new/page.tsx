@@ -54,6 +54,10 @@ export default function NewQuotePage() {
     if (service.defaultTimeline && quoteDraft.timeline === DEFAULT_TIMELINE) {
       patch.timeline = service.defaultTimeline;
     }
+    // Permanência mínima do catálogo vira o "Prazo Mínimo" da proposta (se ainda vazio).
+    if (service.minCommitment && !quoteDraft.minTerm.trim()) {
+      patch.minTerm = service.minCommitment;
+    }
     updateQuoteDraft(patch);
   };
 
