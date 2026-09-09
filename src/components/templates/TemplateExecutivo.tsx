@@ -88,7 +88,7 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
               Nº {q.proposalNumber}
             </h1>
           </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4 text-left md:text-right text-xs">
+          <dl className={`grid grid-cols-2 gap-x-8 gap-y-4 text-left md:text-right text-xs ${(q.minTerm || q.commercial?.commitmentMonths) ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
             {[
               ['Emissão', date],
               ['Validade', q.validityDays],

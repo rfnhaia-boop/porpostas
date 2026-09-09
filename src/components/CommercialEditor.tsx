@@ -97,7 +97,6 @@ export function CommercialEditor() {
             >
               <option value="fixed" className="bg-[var(--background)] text-[var(--foreground)]">Data fixa</option>
               <option value="month_end" className="bg-[var(--background)] text-[var(--foreground)]">Fim do mês</option>
-              <option value="client" className="bg-[var(--background)] text-[var(--foreground)]">Cliente escolhe no aceite</option>
             </select>
           </label>
           {(c.dueDateMode ?? 'fixed') === 'fixed' && (

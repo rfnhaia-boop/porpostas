@@ -19,21 +19,14 @@ export function PrintButton() {
   );
 }
 
-function lastDayOfThisMonthISO(): string {
-  const n = new Date();
-  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
-}
-
 export function ClientResponse({
   token,
   initialStatus,
   initialNote,
   selection,
-  dueDateMode = 'fixed',
   locked = false,
 }: {
   selection?: { selectedPackage: string; optionalIds: string[]; revision: string };
-  dueDateMode?: string;
   locked?: boolean;
   token: string;
   initialStatus: Status;
@@ -45,7 +38,6 @@ export function ClientResponse({
   const [saving, setSaving] = useState<null | 'approved' | 'declined' | 'changes_requested'>(null);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
-  const [dueDate, setDueDate] = useState<string>(() => lastDayOfThisMonthISO());
 
   // Gamification states
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -100,7 +92,7 @@ export function ClientResponse({
       const res = await fetch(`/api/p/${token}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision, note, selection, agreed, dueDate: dueDateMode === 'client' ? dueDate : undefined }),
+        body: JSON.stringify({ decision, note, selection, agreed }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -280,23 +272,6 @@ export function ClientResponse({
 
         {/* Highlighted Area during Spotlight */}
         <div className={`relative mt-12 p-8 -mx-8 rounded-3xl transition-all duration-700 ${guideStep === 'blur' ? 'z-50 bg-[var(--background)] shadow-[0_-20px_60px_rgba(0,0,0,0.8)]' : 'z-10'}`}>
-          {dueDateMode === 'client' && !decided && (
-            <div className="mx-auto mb-8 w-fit text-center">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-                Quando você quer que vença o 1º pagamento?
-              </p>
-              <input
-                type="date"
-                value={dueDate}
-                min={new Date().toISOString().slice(0, 10)}
-                max={new Date(Date.now() + 45 * 864e5).toISOString().slice(0, 10)}
-                onChange={(e) => setDueDate(e.target.value)}
-                style={{ colorScheme: 'dark' }}
-                className="rounded-xl border border-[var(--border-color)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)] focus:outline-[#FF6A00]"
-              />
-              <p className="mt-2 text-[10px] text-[var(--text-muted)]">Os próximos vencem no mesmo dia dos meses seguintes.</p>
-            </div>
-          )}
           <label className="flex items-center justify-center gap-3 text-xs font-bold text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors relative w-fit mx-auto">
             
             <div className="relative flex items-center justify-center">

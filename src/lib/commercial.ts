@@ -149,8 +149,8 @@ export function commercialPaymentTerms(items: CommercialItem[], c: CommercialCon
   if (once) parts.push(`${monthly ? 'Implantação' : 'Pagamento do projeto'}: ${money(once)}${c.installments > 1 ? ` em ${c.installments} parcelas mensais (ajuste de centavos nas primeiras parcelas)` : ' em pagamento único'}`);
   if (monthly) parts.push(`${c.months} mensalidades de ${money(monthly)}. Vigência: ${c.months} meses${c.commitmentMonths ? `; permanência mínima: ${c.commitmentMonths} meses` : ''}`);
   const mode = c.dueDateMode ?? 'fixed';
-  if (mode === 'month_end') parts.push('Vencimento no último dia de cada mês');
-  else if (mode === 'client') parts.push('O cliente define o dia do 1º vencimento ao aceitar; os seguintes caem no mesmo dia dos meses seguintes, limitado ao último dia do mês');
+  // 'client' foi descontinuado (o cliente não escolhe mais a data no aceite) — cai em fim do mês.
+  if (mode === 'month_end' || mode === 'client') parts.push('Vencimento no último dia de cada mês');
   else parts.push(c.firstDueDate ? `Primeiro vencimento: ${c.firstDueDate.split('-').reverse().join('/')}. Demais vencimentos no mesmo dia dos meses seguintes, limitado ao último dia do mês` : 'Primeiro vencimento a definir antes do envio');
   return parts.join('. ') + '.';
 }

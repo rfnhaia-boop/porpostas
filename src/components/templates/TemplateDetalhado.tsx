@@ -140,7 +140,7 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
         </motion.section>
 
         {/* Fechamento */}
-        <motion.section variants={fadeUp} className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 border-t-2 border-[#0D5B43]/20 pt-10 font-grotesque md:grid-cols-3">
+        <motion.section variants={fadeUp} className={`mt-16 grid grid-cols-2 gap-8 border-t-2 border-[#0D5B43]/20 pt-10 font-grotesque ${(q.minTerm || q.commercial?.commitmentMonths) ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
           <div className="flex flex-col gap-2">
             <span className="block text-[9px] font-black uppercase tracking-[.3em] text-[#0D5B43]/50">Prazo de Execução</span>
             <strong className="text-[13px] font-bold text-[#0F221C]">{q.timeline}</strong>

@@ -53,8 +53,8 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
             <span className="italic" style={{ color: ORANGE }}>Justo</span> no valor.
           </h1>
           
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-10 border-t-2 border-[#1C1A14] pt-10 text-sm">
-            <div className="flex flex-col gap-2">
+          <div className="mt-16 grid grid-cols-2 gap-x-8 gap-y-8 border-t-2 border-[#1C1A14] pt-10 text-sm md:flex md:flex-wrap md:gap-x-10">
+            <div className="flex flex-col gap-2 md:min-w-[180px]">
               <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Proposto Por</p>
               <p className="mt-2 font-grotesque text-lg font-bold text-[#1C1A14]">{company.name}</p>
               {company.cnpj && <p className="text-[11px] font-semibold tracking-wider text-black/50">{company.cnpj}</p>}
@@ -68,6 +68,16 @@ export const TemplateEssencial = ({ q }: { q: QuoteView }) => {
               <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Validade</p>
               <p className="mt-2 font-grotesque text-lg font-bold text-[#1C1A14]">{q.validityDays}</p>
             </div>
+            <div className="flex flex-col gap-2 border-l-2 border-black/5 pl-8 md:pl-10">
+              <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Prazo Estimado</p>
+              <p className="mt-2 font-grotesque text-lg font-bold text-[#1C1A14]">{q.timeline}</p>
+            </div>
+            {(q.minTerm || q.commercial?.commitmentMonths) ? (
+              <div className="flex flex-col gap-2 border-l-2 border-black/5 pl-8 md:pl-10">
+                <p className="text-[9px] font-black uppercase tracking-[.3em] text-black/30 font-grotesque">Prazo Mínimo</p>
+                <p className="mt-2 font-grotesque text-lg font-bold text-[#1C1A14]">{q.minTerm || `${q.commercial?.commitmentMonths} meses`}</p>
+              </div>
+            ) : null}
           </div>
         </motion.header>
 
