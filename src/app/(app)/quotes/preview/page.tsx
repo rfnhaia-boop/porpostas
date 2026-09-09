@@ -403,10 +403,14 @@ export default function PreviewPage() {
                 {/* Footer / Salvar */}
                 <div className="relative z-10 mt-12 flex justify-end">
                   <button
-                    onClick={() => setIsEditingSettings(false)}
-                    className="w-full md:w-auto bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] text-[#0A0A0A] px-10 py-4 rounded-full font-black uppercase tracking-[0.2em] text-xs shadow-[0_0_30px_rgba(255,106,0,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(255,106,0,0.6)]"
+                    onClick={async () => {
+                      await handleSaveProposal();
+                      setIsEditingSettings(false);
+                    }}
+                    disabled={saveState === 'saving'}
+                    className="w-full md:w-auto bg-gradient-to-r from-[#FF6A00] to-[#FF8A3D] text-[#0A0A0A] px-10 py-4 rounded-full font-black uppercase tracking-[0.2em] text-xs shadow-[0_0_30px_rgba(255,106,0,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(255,106,0,0.6)] disabled:opacity-60 disabled:hover:scale-100"
                   >
-                    Salvar Ajustes
+                    {saveState === 'saving' ? 'Salvando…' : 'Salvar Ajustes'}
                   </button>
                 </div>
               </motion.div>
