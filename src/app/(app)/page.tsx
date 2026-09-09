@@ -6,6 +6,8 @@ import { usePlatformStore } from '@/store/usePlatformStore';
 import { api } from '@/lib/api';
 import { formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BrandBanner } from '@/components/templates/BrandBanner';
+import { DashboardInteractiveCharts } from '@/components/charts/DashboardInteractiveCharts';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { MiniBarChart } from '@/components/charts/MiniBarChart';
 import { StatusDonut } from '@/components/charts/StatusDonut';
@@ -393,6 +395,13 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+
+      <div className="mt-12">
+        <DashboardInteractiveCharts proposals={proposals} />
+        <BrandBanner />
+      </div>
     </div>
   );
 }
+
+

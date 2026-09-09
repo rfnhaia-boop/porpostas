@@ -1,5 +1,6 @@
 'use client';
 import { CommercialSummary } from './CommercialSummary';
+
 import { included, commercialTotals, commercialPaymentTerms } from '@/lib/commercial';
 import { formatBRL } from '@/lib/money';
 
@@ -35,8 +36,10 @@ const MAP: Record<TemplateId, React.ComponentType<{ q: QuoteView }>> = {
 
 export function TemplateRenderer({ template, q }: { template: string; q: QuoteView }) {
   const Component = MAP[(template as TemplateId)] ?? TemplateCyber;
-  if (!q.commercial) return <Component q={q} />;
+  if (!q.commercial) return <><Component q={q} /></>;
   const c = q.commercial;
   const rendered: QuoteView = { ...q, total: commercialTotals(q.items, c).total, paymentTerms: commercialPaymentTerms(q.items, c, formatBRL), items: q.items.filter(i => included(i, c)).map(i => ({ ...i, name: i.billingType === 'monthly' ? i.name + ' · ' + c.months + ' mensalidades' : i.name, quantity: i.quantity * (i.billingType === 'monthly' ? c.months : 1), price: Math.round(i.quantity * i.unitPrice) * (i.billingType === 'monthly' ? c.months : 1) })) };
   return <><Component q={rendered} /><CommercialSummary q={q} /></>;
 }
+
+

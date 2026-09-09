@@ -40,6 +40,20 @@ model Company {
   payments          Payment[]
   emailTemplates    EmailTemplate[]
   whatsappTemplates WhatsappTemplate[]
+  haviConversations HaviConversation[]
+}
+
+/// Histórico de conversas do Havi (cadastro conversado). messages = JSON [{role,content,drafts?,options?}].
+model HaviConversation {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title     String   @default("Nova conversa")
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
 }
 
 /// Mensagens de WhatsApp prontas ("clicar e enviar"). Texto puro, sem HTML.

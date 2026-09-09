@@ -1,12 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePlatformStore } from '@/store/usePlatformStore';
+import { api } from '@/lib/api';
+import { autoTitleFrom } from '@/lib/ravi/conversation';
 import { toCents, formatBRL } from '@/lib/money';
 import { motion } from 'framer-motion';
 import {
   ArrowUp,
+  ArrowLeft,
+  ArrowRight,
   X,
   Loader2,
   Check,
@@ -41,29 +46,66 @@ interface ClientDraft {
   email: string;
   phone: string;
 }
-type Draft = { type: 'service'; data: ServiceDraft } | { type: 'client'; data: ClientDraft };
-type Msg = { role: 'user' | 'assistant'; content: string; raw?: string; drafts?: Draft[]; options?: string[] };
+export type Draft = { type: 'service'; data: ServiceDraft } | { type: 'client'; data: ClientDraft };
+export type Msg = { role: 'user' | 'assistant'; content: string; raw?: string; drafts?: Draft[]; options?: string[] };
 
 const STARTERS = [
+  { icon: HelpCircle, title: 'Me ajuda a começar', desc: 'Descobrir o primeiro passo', text: 'Me ajuda a começar. Vai perguntando uma coisa por vez.' },
   { icon: Wrench, title: 'Serviço novo', desc: 'Um serviço que você entrega', text: 'Quero cadastrar um serviço novo.' },
   { icon: Package, title: 'Produto novo', desc: 'Algo que você vende por unidade', text: 'Quero cadastrar um produto novo.' },
+  { icon: ClipboardPaste, title: 'Montar orçamento', desc: 'Criar uma proposta com o que eu vendo', text: 'Quero montar um orçamento. Me ajuda a preparar o que falta primeiro.' },
   { icon: ClipboardPaste, title: 'Ler um contrato', desc: 'Anexe PDF/DOCX ou cole o texto', text: 'Vou te passar um contrato/texto — extrai o cliente e os serviços.' },
-  { icon: HelpCircle, title: 'Me ajuda a montar', desc: 'Não sei por onde começar', text: 'Me ajuda a montar um serviço do zero, pergunta o que precisar.' },
 ];
 
-export function RaviServiceChat({
-  onClose,
-  variant = 'modal',
-}: {
-  onClose: () => void;
-  variant?: 'modal' | 'page';
-}) {
+export interface RaviChatRef { pushMsg: (text: string) => void; }
+
+export const RaviServiceChat = forwardRef<
+  RaviChatRef,
+  {
+    onClose: () => void;
+    variant?: 'modal' | 'page';
+    conversationId?: string | null;
+    initialMessages?: Msg[];
+    onConversationChange?: (id: string, title: string) => void;
+  }
+>(({ onClose, variant = 'modal', conversationId = null, initialMessages, onConversationChange }, ref) => {
   const isPage = variant === 'page';
+  const router = useRouter();
+  const companyInfo = usePlatformStore((s) => s.companyInfo);
   const addSavedService = usePlatformStore((s) => s.addSavedService);
   const addClient = usePlatformStore((s) => s.addClient);
   const queryClient = useQueryClient();
 
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => initialMessages ?? []);
+  const convIdRef = useRef<string | null>(conversationId);
+
+  // Salva a conversa no histórico (só quando a página passou o callback — o modal não persiste).
+  const persistConversation = (all: Msg[]) => {
+    if (!onConversationChange || !all.length) return;
+    const payload = all.map((m) => ({
+      role: m.role,
+      content: m.content,
+      ...(m.raw ? { raw: m.raw } : {}),
+      ...(m.drafts?.length ? { drafts: m.drafts } : {}),
+      ...(m.options?.length ? { options: m.options } : {}),
+    }));
+    const title = autoTitleFrom(all);
+    (async () => {
+      try {
+        if (convIdRef.current) {
+          const r = await api.raviConversations.update(convIdRef.current, { messages: payload });
+          onConversationChange(r.id, r.title);
+        } else {
+          const r = await api.raviConversations.create({ title, messages: payload });
+          convIdRef.current = r.id;
+          onConversationChange(r.id, r.title);
+        }
+      } catch {
+        /* histórico é best-effort — não trava o chat */
+      }
+    })();
+  };
+
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
@@ -84,6 +126,7 @@ export function RaviServiceChat({
   const secTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasStarted = messages.length > 0;
+  const ownerName = companyInfo.name && companyInfo.name !== 'Minha Empresa' ? companyInfo.name : '';
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -118,15 +161,15 @@ export function RaviServiceChat({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Falha.');
-      setMessages((m) => [
-        ...m,
-        {
-          role: 'assistant',
-          content: data.reply,
-          drafts: Array.isArray(data.drafts) ? data.drafts : [],
-          options: Array.isArray(data.options) ? data.options.filter((o: unknown) => typeof o === 'string') : [],
-        },
-      ]);
+      const assistantMsg: Msg = {
+        role: 'assistant',
+        content: data.reply,
+        drafts: Array.isArray(data.drafts) ? data.drafts : [],
+        options: Array.isArray(data.options) ? data.options.filter((o: unknown) => typeof o === 'string') : [],
+      };
+      const full = [...shown, assistantMsg];
+      setMessages(full);
+      persistConversation(full);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Não consegui responder.');
     } finally {
@@ -274,20 +317,25 @@ export function RaviServiceChat({
   );
   const mmss = `${String(Math.floor(recSecs / 60)).padStart(2, '0')}:${String(recSecs % 60).padStart(2, '0')}`;
 
+  useImperativeHandle(ref, () => ({ pushMsg: (t: string) => push(t) }));
+
   const panel = (
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 0, scale: isPage ? 1 : 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={(e) => e.stopPropagation()}
-        className={`relative flex flex-col overflow-hidden border border-white/[0.08] bg-[#050505]/95 shadow-[0_20px_70px_rgba(0,0,0,0.8)] backdrop-blur-3xl ${
-          isPage
-            ? 'h-full w-full rounded-[1.5rem]'
-            : 'h-full max-h-[860px] w-full max-w-4xl rounded-[2rem]'
-        }`}
+        className={`relative flex flex-col overflow-hidden ${isPage ? "h-full w-full bg-transparent" : "h-full max-h-[860px] w-full max-w-4xl rounded-[2rem] border border-white/[0.08] bg-[#050505]/95 shadow-[0_20px_70px_rgba(0,0,0,0.8)] backdrop-blur-3xl"}`}
       >
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.05] px-5 sm:px-8">
+        {!isPage && <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.05] px-5 sm:px-8">
           <div className="flex items-center gap-2 text-zinc-300">
+            <button
+              onClick={onClose}
+              className="mr-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/55 transition-all hover:border-white/20 hover:text-white"
+              title="Voltar"
+            >
+              <ArrowLeft size={15} />
+            </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/havi-icon.webp" alt="Havi" className="h-7 w-7 rounded-full" />
             <span className="text-sm font-light tracking-wide">Havi</span>
@@ -304,47 +352,51 @@ export function RaviServiceChat({
               <X size={15} />
             </button>
           </div>
-        </header>
+        </header>}
 
         {/* Conteúdo */}
         <div
           ref={scrollRef}
-          className="custom-scrollbar mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-y-auto px-5 pt-4 sm:px-8"
+          className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-y-auto px-5 pt-4 sm:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {!hasStarted ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
-              <motion.div
+                            <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center relative z-10 w-full"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/havi-pose.webp" alt="Havi" className="mb-3 h-24 w-auto drop-shadow-[0_0_40px_rgba(255,106,0,0.25)] sm:h-28" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/nex-logo.webp" alt="NEX" className="h-7 w-auto" />
-                <span className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.35em] text-white/30">
-                  Fechô · Havi
-                </span>
-                <h2 className="mt-4 text-lg font-light tracking-tight text-zinc-300 sm:text-xl">
-                  O que a gente vai cadastrar hoje?
+                <div className="absolute top-10 h-32 w-32 rounded-full bg-[#FF6A00]/20 blur-[60px]" />
+                <img src="/havi-pose.webp" alt="Havi" className="relative z-10 mb-4 h-24 w-auto drop-shadow-[0_0_25px_rgba(255,106,0,0.6)] sm:h-28 hover:scale-105 transition-transform duration-500" />
+                <div className="flex flex-col items-center gap-1">
+                  <img src="/nex-logo.webp" alt="NEX" className="h-6 w-auto opacity-70" />
+                  <span className="mt-1 text-[9px] font-black uppercase tracking-[0.4em] text-[#FF6A00] drop-shadow-[0_0_10px_rgba(255,106,0,0.5)]">
+                    Nexus · Havi AI
+                  </span>
+                </div>
+                <h2 className="mt-8 font-display text-3xl font-light tracking-tight text-white sm:text-4xl drop-shadow-lg text-center">
+                  {ownerName ? `${ownerName}, por onde começamos?` : 'Por onde a gente começa hoje?'}
                 </h2>
+                <p className="mt-3 max-w-md text-sm font-light leading-relaxed text-zinc-400">
+                  Eu posso te guiar, montar rascunhos e te mandar conferir cada resultado no lugar certo.
+                </p>
               </motion.div>
 
-              <div className="grid w-full grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 mt-4">
                 {STARTERS.map((s) => (
                   <motion.button
                     key={s.title}
                     onClick={() => push(s.text)}
-                    whileHover={{ y: -3 }}
-                    className="group flex h-full flex-col items-start rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4 text-left backdrop-blur-xl transition-colors hover:border-[#FF6A00]/30 hover:bg-white/[0.05] sm:p-5"
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    className="group flex h-full flex-col items-start rounded-3xl border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent p-5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all hover:border-[#FF6A00]/30 hover:shadow-[0_0_30px_rgba(255,106,0,0.15)] hover:from-[#FF6A00]/5 sm:p-6"
                   >
-                    <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-white/10 bg-white/5 text-zinc-400 transition-colors group-hover:border-[#FF6A00]/30 group-hover:text-[#FF6A00]">
-                      <s.icon size={17} />
+                    <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-400 transition-colors group-hover:border-[#FF6A00]/30 group-hover:text-[#FF6A00] group-hover:bg-[#FF6A00]/10">
+                      <s.icon size={20} />
                     </span>
-                    <span className="text-xs font-medium leading-tight text-zinc-200 group-hover:text-white sm:text-sm">
+                    <span className="text-sm font-bold uppercase tracking-widest text-white/80 group-hover:text-white">
                       {s.title}
                     </span>
-                    <span className="mt-1 hidden text-[11px] font-light leading-relaxed text-zinc-500 sm:block">
+                    <span className="mt-2 text-xs font-light leading-relaxed text-zinc-500 group-hover:text-white/60">
                       {s.desc}
                     </span>
                   </motion.button>
@@ -408,11 +460,27 @@ export function RaviServiceChat({
                 </div>
               )}
               {savedNames.length > 0 && (
-                <div className="flex items-center gap-2 self-start rounded-2xl border border-green-500/40 bg-green-500/10 px-3.5 py-2.5 text-sm text-green-400">
-                  <Check size={15} />{' '}
-                  {savedNames.length === 1
-                    ? `"${savedNames[0]}" foi salvo.`
-                    : `${savedNames.length} cadastros salvos.`}
+                <div className="self-start rounded-2xl border border-green-500/40 bg-green-500/10 px-3.5 py-3 text-sm text-green-300">
+                  <div className="flex items-center gap-2">
+                    <Check size={15} />{' '}
+                    {savedNames.length === 1
+                      ? `"${savedNames[0]}" foi salvo.`
+                      : `${savedNames.length} cadastros salvos.`}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => router.push('/services')}
+                      className="flex items-center gap-1.5 rounded-full border border-green-500/30 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-green-200 transition-colors hover:bg-green-500/10"
+                    >
+                      Ver em Serviços <ArrowRight size={12} />
+                    </button>
+                    <button
+                      onClick={() => router.push('/quotes/new?fresh=1')}
+                      className="flex items-center gap-1.5 rounded-full bg-[#FF6A00] px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-[#0A0A0A] transition-opacity hover:opacity-90"
+                    >
+                      Montar orçamento <ArrowRight size={12} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -543,7 +611,8 @@ export function RaviServiceChat({
       {panel}
     </div>
   );
-}
+});
+RaviServiceChat.displayName = 'RaviServiceChat';
 
 function Bubble({
   role,

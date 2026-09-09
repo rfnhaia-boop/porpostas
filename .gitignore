@@ -43,3 +43,7 @@ next-env.d.ts
 
 # uploads de usuário (logos) — persistem no servidor, fora do git
 /public/uploads/
+
+# codemods locais (aider/gemini)
+fix.js
+fix-sidebar.js

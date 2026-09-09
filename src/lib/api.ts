@@ -265,6 +265,22 @@ export const api = {
     resendEmailVerification: () =>
       request<{ ok: true }>('/api/company/verify-email', { method: 'POST' }),
   },
+  raviConversations: {
+    list: () => request<{ id: string; title: string; updatedAt: string }[]>('/api/ravi/conversations'),
+    get: (id: string) =>
+      request<{ id: string; title: string; messages: unknown[]; updatedAt: string }>(`/api/ravi/conversations/${id}`),
+    create: (data: { title?: string; messages: unknown[] }) =>
+      request<{ id: string; title: string; updatedAt: string }>('/api/ravi/conversations', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: { title?: string; messages?: unknown[] }) =>
+      request<{ id: string; title: string; updatedAt: string }>(`/api/ravi/conversations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    remove: (id: string) => request<void>(`/api/ravi/conversations/${id}`, { method: 'DELETE' }),
+  },
   emailTemplates: {
     list: () => request<EmailTemplateRow[]>('/api/email-templates'),
     save: (

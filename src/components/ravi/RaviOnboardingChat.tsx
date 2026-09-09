@@ -3,14 +3,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowUp, X, Loader2, Check, Mic, Square, Trash2, AudioLines, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowUp, X, Loader2, Check, Mic, Square, Trash2, AudioLines, Building2 } from 'lucide-react';
+import { usePlatformStore } from '@/store/usePlatformStore';
 
 type Msg = { role: 'user' | 'assistant'; content: string; contextDraft?: { text: string } | null };
 
-const FIRST: Msg = {
+const firstMessage = (companyName: string): Msg => ({
   role: 'assistant',
-  content: 'Bora te conhecer rápido. Em poucas palavras — o que a sua empresa faz?',
-};
+  content: companyName
+    ? `${companyName}, bora alinhar rapidinho. O que você vende ou quer vender primeiro?`
+    : 'Bora alinhar rapidinho. O que você vende ou quer vender primeiro?',
+});
 
 export function RaviOnboardingChat({
   onClose,
@@ -20,8 +23,10 @@ export function RaviOnboardingChat({
   onSaved?: () => void;
 }) {
   const queryClient = useQueryClient();
+  const companyName = usePlatformStore((s) => s.companyInfo.name);
+  const knownCompany = companyName && companyName !== 'Minha Empresa' ? companyName : '';
 
-  const [messages, setMessages] = useState<Msg[]>([FIRST]);
+  const [messages, setMessages] = useState<Msg[]>(() => [firstMessage(knownCompany)]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -180,6 +185,13 @@ export function RaviOnboardingChat({
       >
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.05] px-5 sm:px-8">
           <div className="flex items-center gap-2 text-zinc-300">
+            <button
+              onClick={onClose}
+              className="mr-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/55 transition-all hover:border-white/20 hover:text-white"
+              title="Voltar"
+            >
+              <ArrowLeft size={15} />
+            </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/havi-icon.webp" alt="Havi" className="h-7 w-7 rounded-full" />
             <span className="text-sm font-light tracking-wide">Conhecer sua empresa</span>
