@@ -4,17 +4,20 @@ import { loginClientByEmail } from '@/lib/clientAuth';
 import { checkPortalClaim } from '@/lib/portalClaim';
 import { exchangeGoogleCode, fetchGoogleProfile } from '@/lib/portalGoogle';
 import { extractToken } from '@/lib/slug';
+import { appUrl } from '@/lib/email';
+
+// Atrás do nginx, req.url/req.nextUrl.origin viram localhost:3015 — o Google
+// recusa o redirect_uri e os redirects finais quebrariam. Usa sempre a URL pública.
+const go = (path: string) => NextResponse.redirect(appUrl(path));
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state') || '';
 
-  if (!code) {
-    return NextResponse.redirect(new URL('/portal/login?error=google_cancelled', req.url));
-  }
+  if (!code) return go('/portal/login?error=google_cancelled');
 
   try {
-    const redirectUri = `${req.nextUrl.origin}/api/portal/auth/google/callback`;
+    const redirectUri = appUrl('/api/portal/auth/google/callback');
     const tokens = await exchangeGoogleCode(code, redirectUri);
     const profile = await fetchGoogleProfile(tokens.access_token);
     if (!profile.email || profile.email_verified === false) throw new Error('Google não retornou e-mail verificado.');
@@ -27,14 +30,14 @@ export async function GET(req: NextRequest) {
       const gate = await checkPortalClaim(proposalToken, email);
       if (!gate.ok) {
         const q = gate.status === 409 ? 'already_linked' : gate.status === 403 ? 'not_allowed' : 'invalid_proposal';
-        return NextResponse.redirect(new URL(`/portal/login?error=${q}`, req.url));
+        return go(`/portal/login?error=${q}`);
       }
       await prisma.client.update({
         where: { id: gate.client.id },
         data: { email, portalClaimedAt: gate.client.portalClaimedAt ?? new Date() },
       });
       await loginClientByEmail(email);
-      return NextResponse.redirect(new URL('/portal', req.url));
+      return go('/portal');
     }
 
     // Login normal — só entra quem já configurou o acesso ao portal com esse e-mail.
@@ -42,12 +45,10 @@ export async function GET(req: NextRequest) {
       where: { email: { equals: email, mode: 'insensitive' }, portalClaimedAt: { not: null } },
       select: { id: true },
     });
-    if (!client) {
-      return NextResponse.redirect(new URL('/portal/login?error=not_found', req.url));
-    }
+    if (!client) return go('/portal/login?error=not_found');
     await loginClientByEmail(email);
-    return NextResponse.redirect(new URL('/portal', req.url));
+    return go('/portal');
   } catch {
-    return NextResponse.redirect(new URL('/portal/login?error=google_failed', req.url));
+    return go('/portal/login?error=google_failed');
   }
 }
