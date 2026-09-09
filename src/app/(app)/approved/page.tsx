@@ -27,7 +27,7 @@ export default function ApprovedPage() {
 
   const approved = proposals
     .filter((p) => EXECUTABLE.includes(p.status))
-    .sort((a, b) => (b.respondedAt || b.createdAt).localeCompare(a.respondedAt || a.createdAt));
+    .sort((a, b) => (b.respondedAt || b.createdAt || '').localeCompare(a.respondedAt || a.createdAt || ''));
 
   return (
     <div className="p-4 sm:p-6 lg:p-12 max-w-7xl mx-auto min-h-screen">

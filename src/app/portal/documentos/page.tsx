@@ -3,7 +3,8 @@ import { loadPortalProposals } from "@/lib/portalData";
 import { DocumentosView } from "./DocumentosView";
 
 function monthLabel(ym: string) {
-  const [y, m] = ym.split("-").map(Number);
+  const [y, m] = String(ym || "").split("-").map(Number);
+  if (!y || !m) return "";
   return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
 

@@ -166,7 +166,7 @@ export default function Dashboard() {
           <p className="mb-6 flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--text-muted)]">
             <Wallet size={14} /> Saúde dos Pagamentos
           </p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-x-6 gap-y-5">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">
                 A receber (no prazo)

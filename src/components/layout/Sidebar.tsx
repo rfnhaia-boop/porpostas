@@ -15,7 +15,11 @@ export const Sidebar = ({ open = false, onClose }: { open?: boolean; onClose?: (
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch {
+      /* mesmo se o request falhar, tira o usuário da área logada */
+    }
     router.push('/login');
     router.refresh();
   };

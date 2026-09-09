@@ -53,7 +53,9 @@ export function AvaliacaoView({ projects }: { projects: Project[] }) {
 
 function ProjectReview({ project }: { project: Project }) {
   const router = useRouter();
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  // Mês corrente no fuso local (toISOString vira o mês seguinte à meia-noite UTC).
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const existing = project.reviews.find((r) => r.month === currentMonth);
 
   const [rating, setRating] = useState(existing?.rating ?? 0);

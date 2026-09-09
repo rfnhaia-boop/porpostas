@@ -36,10 +36,11 @@ export default function SetupClientAccount() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao configurar a conta.");
-      
+
       router.push("/portal");
-    } catch (err: any) {
-      setError(err.message);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error && !/fetch/i.test(err.message) ? err.message : "Não deu pra conectar agora. Tenta de novo.");
       setSaving(false);
     }
   };

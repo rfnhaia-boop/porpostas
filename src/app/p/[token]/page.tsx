@@ -90,7 +90,7 @@ export default async function PublicProposalPage({ params }: Props) {
     timeline: proposal.timeline,
     paymentTerms: proposal.paymentTerms || DEFAULT_PAYMENT_TERMS,
     notes: proposal.notes,
-    items: [...items].sort((a, b) => a.order - b.order).map((it) => ({
+    items: [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((it) => ({
       billingType: it.billingType, optional: it.optional, selected: it.selected, packageId: it.packageId,
       id: it.id,
       name: it.name,
@@ -108,12 +108,12 @@ export default async function PublicProposalPage({ params }: Props) {
     <main className="min-h-screen bg-[#0a0a0a]">
       <ViewPing token={token} />
 
-      <div className="no-print sticky top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/85 px-5 py-3 shadow-sm backdrop-blur-xl">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-[.22em] text-[#237153]">
+      <div className="no-print sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-black/10 bg-white/85 px-5 py-3 shadow-sm backdrop-blur-xl">
+        <div className="min-w-0">
+          <p className="truncate text-[9px] font-bold uppercase tracking-[.22em] text-[#237153]">
             {company.name}
           </p>
-          <p className="text-sm font-semibold text-[#14251f]">
+          <p className="truncate text-sm font-semibold text-[#14251f]">
             Proposta {proposal.proposalNumber}
             {client?.name ? ` · ${client.name}` : ''}
           </p>

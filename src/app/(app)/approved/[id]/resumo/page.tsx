@@ -14,6 +14,12 @@ function fmtDate(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
 }
 
+function monthLabelPt(ym: string) {
+  const [y, m] = String(ym || '').split('-').map(Number);
+  if (!y || !m) return ym || '';
+  return new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
 export default function ProjectResumoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const company = usePlatformStore((s) => s.companyInfo);
@@ -162,7 +168,7 @@ export default function ProjectResumoPage({ params }: { params: Promise<{ id: st
             <div className="space-y-2">
               {s.deliveries.map((d, i) => (
                 <a
-                  key={i}
+                  key={`${d.url}-${i}`}
                   href={d.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -190,9 +196,7 @@ export default function ProjectResumoPage({ params }: { params: Promise<{ id: st
             <div className="space-y-3">
               {(proposal.progressUpdates ?? []).map((u) => (
                 <div key={u.id} className="rounded-xl border border-[var(--border-color)] p-4 print:border-black/10">
-                  <p className="text-sm font-black capitalize text-[#FF6A00]">
-                    {new Date(Number(u.month.split('-')[0]), Number(u.month.split('-')[1]) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                  </p>
+                  <p className="text-sm font-black capitalize text-[#FF6A00]">{monthLabelPt(u.month)}</p>
                   {u.summary && <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">{u.summary}</p>}
                 </div>
               ))}

@@ -269,7 +269,8 @@ export function ClientResponse({
 
           <button
             onClick={() => respond('changes_requested')}
-            disabled={!!saving}
+            disabled={!!saving || !note.trim()}
+            title={!note.trim() ? 'Descreva a alteração desejada acima' : undefined}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] bg-[var(--panel-bg)] px-6 py-4 text-xs font-black uppercase tracking-widest text-[var(--foreground)] hover:border-[#FF6A00] hover:text-[#FF6A00] transition-colors disabled:opacity-50 relative z-10"
           >
             <MessageSquareText size={16} />

@@ -18,14 +18,19 @@ export default function LoginPage() {
     if (loading) return;
     setLoading(true);
     setError(null);
-    const { error } = await signIn.email({ email, password });
-    if (error) {
-      setError(error.message || 'E-mail ou senha inválidos.');
+    try {
+      const { error } = await signIn.email({ email, password });
+      if (error) {
+        setError(error.message || 'E-mail ou senha inválidos.');
+        setLoading(false);
+        return;
+      }
+      router.push('/');
+      router.refresh();
+    } catch {
+      setError('Não deu pra conectar agora. Tenta de novo.');
       setLoading(false);
-      return;
     }
-    router.push('/');
-    router.refresh();
   };
 
   return (

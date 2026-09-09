@@ -42,9 +42,13 @@ function ResendRow({ proposal }: { proposal: Proposal }) {
       : '';
 
   const copy = async () => {
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt('Copie o link:', url);
+    }
   };
   const whatsapp = () => {
     const text = encodeURIComponent(

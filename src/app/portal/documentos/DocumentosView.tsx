@@ -74,7 +74,7 @@ export function DocumentosView({ docs }: { docs: any[] }) {
               <div className="space-y-2">
                 {d.entregas.map((e: any, idx: number) => (
                   <a
-                    key={idx}
+                    key={`${e.url}-${idx}`}
                     href={e.url}
                     target="_blank"
                     rel="noopener noreferrer"
