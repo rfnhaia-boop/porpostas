@@ -108,6 +108,12 @@ export const TemplateMinimalista = ({ q }: { q: QuoteView }) => {
                 <span className="text-[9px] uppercase tracking-widest text-black/40">Prazo Estimado</span>
                 <span className="font-semibold text-black/80">{q.timeline}</span>
               </div>
+              {q.commercial?.commitmentMonths ? (
+                <div className="flex flex-col gap-1 border-l-2 border-[#FF6A00] pl-4">
+                  <span className="text-[9px] uppercase tracking-widest text-black/40">Prazo Mínimo</span>
+                  <span className="font-semibold text-black/80">{q.commercial.commitmentMonths} meses</span>
+                </div>
+              ) : null}
               <div className="flex flex-col gap-1 border-l-2 border-[#FF6A00] pl-4">
                 <span className="text-[9px] uppercase tracking-widest text-black/40">Pagamento</span>
                 <span className="font-semibold text-black/80">{q.paymentTerms || DEFAULT_PAYMENT_TERMS}</span>

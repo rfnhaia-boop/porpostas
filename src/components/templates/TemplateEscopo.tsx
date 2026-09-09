@@ -167,6 +167,7 @@ export const TemplateEscopo = ({ q }: { q: QuoteView }) => {
           <div className="relative z-10 mx-auto mt-14 grid max-w-2xl gap-8 border-t border-white/10 pt-10 text-left font-grotesque text-sm print:border-black/15 sm:grid-cols-3">
             {[
               ['Prazo Estimado', q.timeline],
+              ...(q.commercial?.commitmentMonths ? [['Prazo Mínimo', `${q.commercial.commitmentMonths} meses`]] : []),
               ['Validade', q.validityDays],
               ['Pagamento', q.paymentTerms || DEFAULT_PAYMENT_TERMS],
             ].map(([k, v]) => (

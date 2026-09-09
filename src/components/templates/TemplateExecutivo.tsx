@@ -93,6 +93,7 @@ export const TemplateExecutivo = ({ q }: { q: QuoteView }) => {
               ['Emissão', date],
               ['Validade', q.validityDays],
               ['Estimativa', q.timeline],
+              ...(q.commercial?.commitmentMonths ? [['Prazo Mínimo', `${q.commercial.commitmentMonths} meses`]] : []),
             ].map(([k, v]) => (
               <div key={k}>
                 <dt className="font-grotesque text-[9px] font-black uppercase tracking-[.2em] text-white/30 print:text-black/45">

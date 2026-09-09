@@ -110,6 +110,12 @@ export const TemplateCyber = ({ q }: { q: QuoteView }) => {
                 <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Prazo Estimado</dt>
                 <dd className="mt-1 text-white/80 font-bold print:text-black">{q.timeline}</dd>
               </div>
+              {q.commercial?.commitmentMonths ? (
+                <div>
+                  <dt className="text-[9px] uppercase tracking-[.2em] text-white/35 print:text-black/45">Prazo Mínimo</dt>
+                  <dd className="mt-1 text-white/80 font-bold print:text-black">{q.commercial.commitmentMonths} meses</dd>
+                </div>
+              ) : null}
             </dl>
           </motion.div>
         )}
