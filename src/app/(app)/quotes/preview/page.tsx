@@ -6,7 +6,7 @@ import React, { useRef, useState } from 'react';
 import { usePlatformStore } from '@/store/usePlatformStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X, XCircle } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Eye, FileText, Link2, Loader2, Mail, MessageCircle, Printer, Send, SlidersHorizontal, X, XCircle } from 'lucide-react';
 import { TemplateRenderer, TEMPLATE_OPTIONS as TEMPLATES } from '@/components/templates/TemplateRenderer';
 import { DEFAULT_PAYMENT_TERMS, type QuoteView } from '@/lib/quoteView';
 import { formatBRL } from '@/lib/money';
@@ -24,6 +24,8 @@ export default function PreviewPage() {
   const [copied, setCopied] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [sendState, setSendState] = useState<'idle' | 'saving'>('idle');
+  const [emailState, setEmailState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   // Proposta persistida: já vem preenchida se estamos editando uma proposta existente.
   const [saved, setSaved] = useState<{ id: string; publicToken: string } | null>(
     quoteDraft.proposalId && quoteDraft.publicToken
@@ -48,6 +50,7 @@ export default function PreviewPage() {
     proposalNumber: quoteDraft.proposalNumber,
     validityDays: quoteDraft.validityDays,
     timeline: quoteDraft.timeline,
+    minTerm: quoteDraft.minTerm,
     paymentTerms,
     notes: quoteDraft.notes,
     items: quoteDraft.services.map((s) => ({
@@ -81,6 +84,7 @@ export default function PreviewPage() {
     title: quoteDraft.title,
     validityDays: quoteDraft.validityDays,
     timeline: quoteDraft.timeline,
+    minTerm: quoteDraft.minTerm,
     paymentTerms,
     notes: quoteDraft.notes,
     accessPhrase,
@@ -112,6 +116,7 @@ export default function PreviewPage() {
         template: quoteDraft.template,
         validityDays: quoteDraft.validityDays,
         timeline: quoteDraft.timeline,
+        minTerm: quoteDraft.minTerm,
         paymentTerms,
         accessPhrase,
         requiresSignedContract: quoteDraft.requiresSignedContract,
@@ -146,12 +151,30 @@ export default function PreviewPage() {
     }
   };
 
+  // Dispara o e-mail da proposta PRO CLIENTE (link + código + mensagem padrão).
+  const sendClientEmail = async () => {
+    const s = saved;
+    if (!s || emailState === 'sending') return;
+    setEmailState('sending');
+    setEmailMsg(null);
+    try {
+      const r = await api.proposals.sendEmail(s.id);
+      setEmailState('sent');
+      setEmailMsg(`E-mail enviado para ${r.to}.`);
+    } catch (err) {
+      setEmailState('error');
+      setEmailMsg(err instanceof Error ? err.message : 'Não consegui enviar o e-mail.');
+    }
+  };
+
   const handleSend = async () => {
     if (sendState === 'saving') return;
     setSendState('saving');
     try {
       await persistProposal('sent');
       setIsSharing(true);
+      // Ao mandar, já dispara o e-mail pro cliente automaticamente.
+      void sendClientEmail();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao preparar o envio.');
     } finally {
@@ -182,16 +205,6 @@ export default function PreviewPage() {
   };
   const firstName = client?.name?.trim().split(/\s+/)[0] || '';
   const phraseLine = accessPhrase ? `\n\nPalavra-chave para abrir: ${accessPhrase}` : '';
-  const openEmail = () => {
-    const subject = encodeURIComponent(`Proposta ${quoteDraft.proposalNumber} — ${companyInfo.name}`);
-    const body = encodeURIComponent(
-      `Olá, ${firstName || client?.name || ''}!\n\n` +
-        `A ${companyInfo.name} preparou uma proposta para você. Você pode revisar e responder (aprovar, recusar ou pedir ajuste) direto pelo link:\n\n` +
-        `${getShareUrl()}${phraseLine}\n\n` +
-        `Qualquer dúvida é só responder este e-mail.\n${companyInfo.name}`,
-    );
-    window.location.href = `mailto:${client?.email || ''}?subject=${subject}&body=${body}`;
-  };
   const openWhatsApp = () => {
     const text = encodeURIComponent(
       `Olá, ${firstName || client?.name || ''}! Aqui é da ${companyInfo.name}. ` +
@@ -283,11 +296,21 @@ export default function PreviewPage() {
                     </div>
                     <div>
                       <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Prazo Estimado</label>
-                      <input 
-                        type="text" 
-                        value={quoteDraft.timeline} 
+                      <input
+                        type="text"
+                        value={quoteDraft.timeline}
                         onChange={(e) => updateQuoteDraft({ timeline: e.target.value })}
                         className="w-full bg-transparent border-b-2 border-white/10 text-2xl font-bold text-white focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-[9px] font-black tracking-[0.3em] uppercase mb-2 block">Prazo Mínimo</label>
+                      <input
+                        type="text"
+                        placeholder="ex: 3 meses (opcional)"
+                        value={quoteDraft.minTerm}
+                        onChange={(e) => updateQuoteDraft({ minTerm: e.target.value })}
+                        className="w-full bg-transparent border-b-2 border-white/10 text-2xl font-bold text-white placeholder:text-white/20 placeholder:text-base focus:outline-none focus:border-[#FF6A00] pb-2 transition-colors"
                       />
                     </div>
                   </div>
@@ -409,9 +432,22 @@ export default function PreviewPage() {
             {typeof window !== 'undefined' && window.location.hostname === 'localhost' && <p className="mb-6 text-xs text-amber-500">Este endereço é local. Ao publicar o sistema, o mesmo botão gera um link acessível ao cliente.</p>}
             <div className="grid gap-3 sm:grid-cols-3">
               <button onClick={() => window.open(getShareUrl(), '_blank', 'noopener,noreferrer')} className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)]"><Eye size={18} /> Visualizar</button>
-              <button onClick={openEmail} className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)]"><Mail size={18} /> E-mail</button>
+              <button
+                onClick={sendClientEmail}
+                disabled={emailState === 'sending' || !saved}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-color)] px-5 py-4 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--background)] disabled:opacity-50"
+              >
+                {emailState === 'sending' ? <Loader2 size={18} className="animate-spin" /> : emailState === 'sent' ? <Check size={18} /> : <Mail size={18} />}
+                {emailState === 'sending' ? 'Enviando…' : emailState === 'sent' ? 'Enviado' : 'E-mail'}
+              </button>
               <button onClick={openWhatsApp} className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-5 py-4 text-sm font-black text-[#07170c]"><MessageCircle size={18} /> WhatsApp</button>
             </div>
+            {emailMsg && (
+              <p className={`mt-3 text-xs font-semibold ${emailState === 'error' ? 'text-red-500' : 'text-green-500'}`}>{emailMsg}</p>
+            )}
+            <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+              O e-mail vai pro cliente ({client?.email || 'sem e-mail cadastrado'}) com o link, o código de acesso e a mensagem padrão. Editável em Disparos.
+            </p>
           </div>
         </div>
       )}

@@ -133,6 +133,7 @@ export interface Proposal {
   template: string;
   validityDays: string;
   timeline: string;
+  minTerm: string;
   paymentTerms: string;
   notes: string;
   total: number;
@@ -315,6 +316,7 @@ export const api = {
       title?: string;
       validityDays: string;
       timeline: string;
+      minTerm?: string;
       paymentTerms: string;
       notes: string;
       status?: 'draft' | 'sent';
@@ -340,6 +342,7 @@ export const api = {
           | 'template'
           | 'validityDays'
           | 'timeline'
+          | 'minTerm'
           | 'paymentTerms'
           | 'notes'
           | 'pixKeyOverride'
@@ -348,6 +351,8 @@ export const api = {
     ) => request<Proposal>(`/api/proposals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     resetAccess: (id: string) =>
       request<{ ok: true }>(`/api/proposals/${id}/access`, { method: 'POST' }),
+    sendEmail: (id: string) =>
+      request<{ ok: true; to: string }>(`/api/proposals/${id}/send`, { method: 'POST' }),
     remove: (id: string) => request<void>(`/api/proposals/${id}`, { method: 'DELETE' }),
   },
   progress: {

@@ -83,7 +83,7 @@ async function dispatch(opts: {
 }
 
 // --- proposta enviada → cliente ------------------------------------------------
-export async function mailProposalSent(proposalId: string) {
+export async function mailProposalSent(proposalId: string): Promise<boolean> {
   try {
     const p = await prisma.proposal.findUnique({
       where: { id: proposalId },
@@ -97,12 +97,12 @@ export async function mailProposalSent(proposalId: string) {
         client: { select: { name: true, email: true } },
       },
     });
-    if (!p?.client?.email || !isEmail(p.client.email)) return;
+    if (!p?.client?.email || !isEmail(p.client.email)) return false;
     const { replyTo, companyName } = await companyReplyTo(p.companyId);
     const link = appUrl(buildPublicPath(p.publicToken, p.client.name));
     const first = p.client.name?.trim().split(/\s+/)[0] || 'Olá';
 
-    await dispatch({
+    return await dispatch({
       companyId: p.companyId,
       key: 'proposal_sent',
       to: p.client.email,
@@ -123,6 +123,7 @@ export async function mailProposalSent(proposalId: string) {
     });
   } catch (err) {
     console.error('[mailer] proposalSent:', err);
+    return false;
   }
 }
 

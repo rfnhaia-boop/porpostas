@@ -88,6 +88,7 @@ export default async function PublicProposalPage({ params }: Props) {
     proposalNumber: proposal.proposalNumber,
     validityDays: proposal.validityDays,
     timeline: proposal.timeline,
+    minTerm: proposal.minTerm ?? '',
     paymentTerms: proposal.paymentTerms || DEFAULT_PAYMENT_TERMS,
     notes: proposal.notes,
     items: [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((it) => ({

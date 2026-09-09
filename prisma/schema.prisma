@@ -211,6 +211,7 @@ model Proposal {
   template       String    @default("cyber")
   validityDays   String    @default("15 Dias")
   timeline       String    @default("30 dias úteis")
+  minTerm        String    @default("") // prazo/permanência mínima, texto livre ("3 meses") — vale pra qualquer modelo
   paymentTerms   String    @default("")
   notes          String    @default("")
   total          Int       @default(0) // centavos

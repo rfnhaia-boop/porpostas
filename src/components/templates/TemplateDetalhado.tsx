@@ -145,10 +145,10 @@ export const TemplateDetalhado = ({ q }: { q: QuoteView }) => {
             <span className="block text-[9px] font-black uppercase tracking-[.3em] text-[#0D5B43]/50">Prazo de Execução</span>
             <strong className="text-[13px] font-bold text-[#0F221C]">{q.timeline}</strong>
           </div>
-          {q.commercial?.commitmentMonths ? (
+          {(q.minTerm || q.commercial?.commitmentMonths) ? (
             <div className="flex flex-col gap-2 border-l border-[#0D5B43]/10 pl-6">
               <span className="block text-[9px] font-black uppercase tracking-[.3em] text-[#0D5B43]/50">Prazo Mínimo</span>
-              <strong className="text-[13px] font-bold text-[#0F221C]">{q.commercial.commitmentMonths} meses</strong>
+              <strong className="text-[13px] font-bold text-[#0F221C]">{q.minTerm || `${q.commercial?.commitmentMonths} meses`}</strong>
             </div>
           ) : null}
           <div className="flex flex-col gap-2 border-l border-[#0D5B43]/10 pl-6">

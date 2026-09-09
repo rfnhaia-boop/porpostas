@@ -46,6 +46,7 @@ export interface QuoteView {
   proposalNumber: string;
   validityDays: string;
   timeline: string;
+  minTerm: string;
   paymentTerms: string;
   notes: string;
   items: QuoteViewItem[];

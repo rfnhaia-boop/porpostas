@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
           template: typeof body?.template === 'string' ? body.template : 'cyber',
           validityDays: typeof body?.validityDays === 'string' ? body.validityDays : '15 Dias',
           timeline: typeof body?.timeline === 'string' ? body.timeline : '30 dias úteis',
+          minTerm: typeof body?.minTerm === 'string' ? body.minTerm.slice(0, 60) : '',
           paymentTerms: commercial ? commercialPaymentTerms(items, commercial, formatBRL) : typeof body?.paymentTerms === 'string' ? body.paymentTerms : '',
           notes: typeof body?.notes === 'string' ? body.notes : '',
           accessPhrase,

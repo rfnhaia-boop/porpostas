@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
   const body = await request.json();
   const data: Record<string, unknown> = {};
-  for (const key of ['proposalNumber', 'title', 'template', 'validityDays', 'timeline', 'paymentTerms', 'notes', 'pixKeyOverride'] as const) {
+  for (const key of ['proposalNumber', 'title', 'template', 'validityDays', 'timeline', 'minTerm', 'paymentTerms', 'notes', 'pixKeyOverride'] as const) {
     if (typeof body[key] === 'string') data[key] = body[key];
   }
   if ('accessPhrase' in body) {

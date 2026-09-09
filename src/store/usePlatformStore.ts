@@ -50,6 +50,7 @@ export interface QuoteDraft {
   paymentTerms: string;
   notes: string;
   timeline: string;
+  minTerm: string;
   accessPhrase: string; // palavra-chave do link ('' = link aberto)
   requiresSignedContract: boolean; // trava: só inicia após anexar o contrato assinado
   // Preenchidos quando o rascunho é uma proposta existente sendo editada.
@@ -68,6 +69,7 @@ export interface EditableProposal {
   title: string;
   validityDays: string;
   timeline: string;
+  minTerm?: string;
   paymentTerms: string;
   notes: string;
   accessPhrase: string | null;
@@ -166,6 +168,7 @@ const initialQuoteDraft: QuoteDraft = {
   paymentTerms: '50% na aprovação e 50% na entrega',
   notes: '',
   timeline: '30 dias úteis',
+  minTerm: '',
   accessPhrase: '',
   requiresSignedContract: false,
   proposalId: null,
@@ -307,6 +310,7 @@ export const usePlatformStore = create<PlatformState>()(
             paymentTerms: p.paymentTerms,
             notes: p.notes,
             timeline: p.timeline,
+            minTerm: p.minTerm ?? '',
             accessPhrase: p.accessPhrase ?? '',
             requiresSignedContract: p.requiresSignedContract ?? false,
             proposalId: p.id,
