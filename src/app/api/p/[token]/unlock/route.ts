@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { unlockCookieName, unlockCookieValue } from '@/lib/proposalUnlock';
+import { unlockCookieName, legacyUnlockCookieName, unlockCookieValue } from '@/lib/proposalUnlock';
 import { extractToken } from '@/lib/slug';
 
 type Ctx = { params: Promise<{ token: string }> };
@@ -24,9 +24,12 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     return Response.json({ error: 'Palavra de acesso incorreta.' }, { status: 401 });
   }
 
-  // Esse aparelho já tinha liberado antes? Então não gasta vaga nova.
+  // Esse aparelho já tinha liberado antes (cookie novo OU o antigo Path=/p)?
+  // Então não gasta vaga nova — só reemite o cookie no path certo.
   const cookieValue = unlockCookieValue(token, proposal.accessPhrase);
-  const alreadyUnlocked = request.cookies.get(unlockCookieName(token))?.value === cookieValue;
+  const alreadyUnlocked =
+    request.cookies.get(unlockCookieName(token))?.value === cookieValue ||
+    request.cookies.get(legacyUnlockCookieName(token))?.value === cookieValue;
 
   if (!alreadyUnlocked) {
     if (proposal.accessCount >= proposal.maxAccesses) {
@@ -42,12 +45,15 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   }
 
   const res = Response.json({ ok: true });
+  // Path=/ porque o cookie precisa chegar tanto na página (/p/...) quanto na API
+  // de resposta (/api/p/.../respond). Com Path=/p a proposta abria mas o aceite
+  // dava "informe o código de acesso". A isolação por proposta é feita pelo NOME
+  // do cookie, que já inclui o token.
   res.headers.append(
     'Set-Cookie',
-    // Path amplo (não o token exato) porque a URL visível pode ter um slug do
-    // cliente na frente (/p/ana-ferreira-<token>) — quem isola por proposta é
-    // o nome do cookie, que já inclui o token.
-    `${unlockCookieName(token)}=${cookieValue}; Path=/p; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 45}`,
+    `${unlockCookieName(token)}=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 45}`,
   );
+  // Expira o cookie antigo (Path=/p) pra não ficar 45 dias sobrando.
+  res.headers.append('Set-Cookie', `${legacyUnlockCookieName(token)}=; Path=/p; Max-Age=0`);
   return res;
 }
