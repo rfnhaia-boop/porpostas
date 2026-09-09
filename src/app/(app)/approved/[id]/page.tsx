@@ -68,6 +68,7 @@ export default function ApprovedProposalPage({ params }: { params: Promise<{ id:
       title: proposal.title,
       validityDays: proposal.validityDays,
       timeline: proposal.timeline,
+      minTerm: proposal.minTerm ?? '',
       paymentTerms: proposal.paymentTerms,
       notes: proposal.notes,
       accessPhrase: proposal.accessPhrase,

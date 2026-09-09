@@ -112,6 +112,7 @@ export default function ProposalsPage() {
       title: p.title,
       validityDays: p.validityDays,
       timeline: p.timeline,
+      minTerm: p.minTerm ?? '',
       paymentTerms: p.paymentTerms,
       notes: p.notes,
       accessPhrase: p.accessPhrase,
