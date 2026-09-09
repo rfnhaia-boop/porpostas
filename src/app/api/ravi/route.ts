@@ -69,17 +69,19 @@ export async function POST(req: NextRequest) {
       : 'Pode me contar um pouco mais?');
 
   // O modelo termina com "OPÇÕES: a | b | c" quando a resposta é um conjunto pequeno.
-  // Vira botões no app; a linha sai do texto.
+  // Vira botões no app; esse pedaço sai do texto (o modelo às vezes põe inline).
   let options: string[] = [];
-  const m = reply.match(/(?:^|\n)\s*OP[ÇC][ÕO]ES\s*:\s*(.+?)\s*$/i);
-  if (m) {
+  const m = reply.match(/[\s.\n]*OP[ÇC][ÕOÔ]E?S\s*[:：]\s*([^\n]+?)\s*$/i);
+  if (m && m[1].includes('|')) {
     options = m[1]
       .split('|')
-      .map((s) => s.trim())
+      .map((s) => s.trim().replace(/[.;]+$/, ''))
       .filter(Boolean)
       .slice(0, 5);
-    reply = reply.slice(0, m.index).trim() || reply.replace(m[0], '').trim();
+    reply = reply.slice(0, m.index).replace(/[\s.]+$/, '').trim();
   }
+  if (options.length < 2) options = [];
+  if (!reply) reply = 'Pode me contar um pouco mais?';
 
   return Response.json({ reply, options, drafts });
 }
