@@ -42,7 +42,7 @@ interface ClientDraft {
   phone: string;
 }
 type Draft = { type: 'service'; data: ServiceDraft } | { type: 'client'; data: ClientDraft };
-type Msg = { role: 'user' | 'assistant'; content: string; raw?: string; drafts?: Draft[] };
+type Msg = { role: 'user' | 'assistant'; content: string; raw?: string; drafts?: Draft[]; options?: string[] };
 
 const STARTERS = [
   { icon: Wrench, title: 'Serviço novo', desc: 'Um serviço que você entrega', text: 'Quero cadastrar um serviço novo.' },
@@ -120,7 +120,12 @@ export function RaviServiceChat({
       if (!res.ok) throw new Error(data?.error || 'Falha.');
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: data.reply, drafts: Array.isArray(data.drafts) ? data.drafts : [] },
+        {
+          role: 'assistant',
+          content: data.reply,
+          drafts: Array.isArray(data.drafts) ? data.drafts : [],
+          options: Array.isArray(data.options) ? data.options.filter((o: unknown) => typeof o === 'string') : [],
+        },
       ]);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Não consegui responder.');
@@ -350,6 +355,23 @@ export function RaviServiceChat({
             <div className="flex flex-col gap-4 pb-6">
               {messages.map((m, i) => (
                 <Bubble key={i} role={m.role} content={m.content}>
+                  {m.role === 'assistant' &&
+                    i === messages.length - 1 &&
+                    !thinking &&
+                    (m.options?.length ?? 0) > 0 &&
+                    !(m.drafts?.length) && (
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {m.options!.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => push(opt)}
+                            className="rounded-full border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-2 text-[13px] font-semibold text-[#FF6A00] transition-colors hover:bg-[#FF6A00]/20 active:scale-95"
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   {m.drafts?.map((d, j) => {
                     const key = `d${i}-${j}`;
                     if (savedKeys.includes(key)) return null;

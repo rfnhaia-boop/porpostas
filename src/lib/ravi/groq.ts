@@ -54,7 +54,7 @@ export async function groqChat(
         model: MODEL,
         messages: [{ role: 'system', content: system }, ...messages],
         temperature: 0.3,
-        max_tokens: 1500,
+        max_tokens: 700,
         ...(tools?.length
           ? {
               tools: tools.map((t) => ({

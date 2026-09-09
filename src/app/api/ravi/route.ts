@@ -60,14 +60,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return Response.json({
-    reply:
-      finalContent?.trim() ||
-      (drafts.length
-        ? drafts.length === 1
-          ? 'Preparei o rascunho abaixo — confere e salva.'
-          : `Preparei ${drafts.length} rascunhos — confere e salva. Se faltou algum item, me fala.`
-        : 'Pode me contar um pouco mais?'),
-    drafts,
-  });
+  let reply =
+    finalContent?.trim() ||
+    (drafts.length
+      ? drafts.length === 1
+        ? 'Preparei o rascunho abaixo — confere e salva.'
+        : `Preparei ${drafts.length} rascunhos — confere e salva. Se faltou algum item, me fala.`
+      : 'Pode me contar um pouco mais?');
+
+  // O modelo termina com "OPÇÕES: a | b | c" quando a resposta é um conjunto pequeno.
+  // Vira botões no app; a linha sai do texto.
+  let options: string[] = [];
+  const m = reply.match(/(?:^|\n)\s*OP[ÇC][ÕO]ES\s*:\s*(.+?)\s*$/i);
+  if (m) {
+    options = m[1]
+      .split('|')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+    reply = reply.slice(0, m.index).trim() || reply.replace(m[0], '').trim();
+  }
+
+  return Response.json({ reply, options, drafts });
 }
