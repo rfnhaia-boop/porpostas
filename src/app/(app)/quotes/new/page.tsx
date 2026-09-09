@@ -6,28 +6,30 @@ import { formatBRL } from '@/lib/money';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CommercialEditor } from '@/components/CommercialEditor';
 import { newCommercialConfig, validateCommercial } from '@/lib/commercial';
 import { Check } from 'lucide-react';
 
 export default function NewQuotePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { clients, savedServices, quoteDraft, updateQuoteDraft, resetQuoteDraft, hydrated } = usePlatformStore();
   const [error, setError] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
 
-  // "Novo Orçamento" (?fresh=1) sempre começa do zero. Também zera se o rascunho
-  // ainda carrega uma proposta que estava sendo editada. Voltar da tela de preview
-  // (sem ?fresh) preserva o que já foi montado.
+  // "Novo Orçamento" (?fresh=1) sempre começa do zero — proposta NOVA, não edição
+  // da anterior. Roda também quando o usuário volta pra cá via link do menu (o Next
+  // pode reusar a instância do componente), por isso depende de `searchParams`.
+  // "Voltar" da tela de preview (sem ?fresh) preserva o que já foi montado.
   useEffect(() => {
-    const fresh = new URLSearchParams(window.location.search).has('fresh');
-    if (fresh) {
+    if (searchParams.has('fresh')) {
       resetQuoteDraft();
-      if (fresh) window.history.replaceState(null, '', '/quotes/new');
+      setStep(1);
+      window.history.replaceState(null, '', '/quotes/new');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const formatCurrency = formatBRL;
 

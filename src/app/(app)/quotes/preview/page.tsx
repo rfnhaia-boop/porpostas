@@ -175,6 +175,10 @@ export default function PreviewPage() {
       setIsSharing(true);
       // Ao mandar, já dispara o e-mail pro cliente automaticamente.
       void sendClientEmail();
+      // Desvincula o rascunho da proposta enviada: o próximo orçamento que o
+      // dono montar (mesmo cliente, ou outro) vira uma proposta NOVA, não uma
+      // edição desta. Esta tela continua funcionando (usa o `saved` local).
+      updateQuoteDraft({ proposalId: null, publicToken: null });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao preparar o envio.');
     } finally {
